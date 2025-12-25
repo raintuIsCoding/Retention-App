@@ -1,2 +1,2 @@
-# Retention-App
-Fixed the big motor need good calculator script
+# Retention
+Big motor need good script
