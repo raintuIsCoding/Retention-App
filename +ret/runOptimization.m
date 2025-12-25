@@ -1,19 +1,25 @@
 function [S, success] = runOptimization(S)
 success = false;
 
+% Pull constants from S (optimizer treats these as fixed)
 ID = S.ID;
 MEOP_psi = S.MEOP_psi;
 DF = S.DF;
+
 minCircPitchFactor = S.minCircPitchFactor;
 minAxialPitchFactor = S.minAxialPitchFactor;
 L_casing = S.L_casing;
 
 casingLength = S.casingLength;
-density_CF = S.density_CF;
-density_Al = S.density_Al;
+density_CF   = S.density_CF;
+density_Al   = S.density_Al;
+density_pin  = S.density_pin;
+
+% Retention ring thickness is fixed during optimization (not a decision var)
+retRingThk = S.retRingThk;
 
 targets = S.targets;
-bounds = S.optBounds;
+bounds  = S.optBounds;
 
 x0 = [S.t, S.nRows, S.nPinsPerRow, S.rowSpacing, S.firstRowZ, S.pinDia]; %#ok<NASGU>
 
@@ -22,11 +28,15 @@ lb = [bounds.t(1), bounds.nRows(1), bounds.nPinsPerRow(1), ...
 ub = [bounds.t(2), bounds.nRows(2), bounds.nPinsPerRow(2), ...
       bounds.rowSpacing(2), bounds.firstRowZ(2), bounds.pinDia(2)];
 
+% Integer decision variables: nRows, nPinsPerRow
 intcon = [2, 3];
 
-objFun = @(x) ret.objectiveFunction(x, ID, MEOP_psi, DF, casingLength, density_CF, density_Al);
+% Updated objective + constraints (match updateAll physics)
+objFun = @(x) ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk);
+
 nonlconFun = @(x) ret.nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, ...
-                                          minCircPitchFactor, minAxialPitchFactor, targets);
+                                          minCircPitchFactor, minAxialPitchFactor, ...
+                                          retRingThk, targets);
 
 options = optimoptions('ga', ...
     'Display', 'iter', ...
@@ -41,16 +51,25 @@ try
     [xOpt, fval, exitflag] = ga(objFun, 6, [], [], [], [], lb, ub, nonlconFun, intcon, options);
 
     if exitflag > 0
-        S.t = xOpt(1);
-        S.nRows = round(xOpt(2));
+        % Write optimized design back into S
+        S.t           = xOpt(1);
+        S.nRows       = round(xOpt(2));
         S.nPinsPerRow = round(xOpt(3));
-        S.rowSpacing = xOpt(4);
-        S.firstRowZ = xOpt(5);
-        S.pinDia = xOpt(6);
-        S.pinLen = S.t + S.retRingThk;
-        S.edgeMarginEnd = S.t;
+        S.rowSpacing  = xOpt(4);
+        S.firstRowZ   = xOpt(5);
+        S.pinDia      = xOpt(6);
+
+        % Derived quantities (keep consistent with updateAll)
+        S.pinLen = S.t + S.retRingThk;  % engagement length
+
+        % Optional: remove legacy field if it exists (avoid confusion)
+        if isfield(S,'edgeMarginEnd')
+            % Not used anymore; firstRowZ defines symmetric end margin
+            S = rmfield(S,'edgeMarginEnd');
+        end
 
         success = true;
+
         fprintf('\n=== OPTIMIZATION RESULTS ===\n');
         fprintf('Wall Thickness: %.4f in\n', S.t);
         fprintf('Axial Rows: %d\n', S.nRows);
@@ -63,6 +82,7 @@ try
         fprintf('Optimization did not converge. Exit flag: %d\n', exitflag);
         [S, success] = ret.gridSearchOptimization(S);
     end
+
 catch ME
     fprintf('Optimization error: %s\n', ME.message);
     fprintf('Attempting grid search fallback...\n');

@@ -4,6 +4,12 @@ function S = updateAll(S)
 r_i = S.ID/2;
 r_o = r_i + S.t;
 
+% -----------------------
+% Pin counts (define once)
+% -----------------------
+totalPins_oneEnd = S.nRows * S.nPinsPerRow;   % pins engaged at ONE end (for axial load split)
+totalPins_total  = totalPins_oneEnd * 2;      % full hardware mass assumes BOTH ends
+
 % Packing check
 r_center = r_o;
 circumference = 2*pi*r_center;
@@ -13,36 +19,69 @@ packingOK = (S.nPinsPerRow <= maxPinsCirc);
 
 % Axial check
 lastRowX = S.firstRowZ + (S.nRows - 1)*S.rowSpacing;
-axialOK = (lastRowX + S.edgeMarginEnd <= S.L_casing);
+axialOK = (lastRowX + S.firstRowZ <= S.L_casing);
 
 % Update casing + pins
 S = ret.updateCasingSurfaces(S, r_i, r_o);
 S = ret.updatePins(S, r_o);
 
 %% ===== MASS CALCS =====
-if ~isfield(S,'retRingThk') || ~isfinite(S.retRingThk) || S.retRingThk<=0
-    S.retRingThk = 0.25;
+% Mass model assumes FULL hardware (both ends) regardless of rendered length.
+nEnds_mass = 2;
+
+% --- Retention ring thickness (in) ---
+if ~isfield(S,'retRingThk') || ~isfinite(S.retRingThk) || S.retRingThk <= 0
+    S.retRingThk = 0.25;  % default guess; can be overridden
 end
-retention_ring_thickness = S.retRingThk;
+retRingThk = S.retRingThk;
 
+% -----------------------
+% 1) Casing mass (CF)
+%    Option: subtract pin-hole volume through wall thickness
+% -----------------------
 OD = S.ID + 2*S.t;
-Volume_casing = (pi/4) * (OD^2 - S.ID^2) * S.casingLength;
-Mass_casing = Volume_casing * S.density_CF;
+A_annulus      = (pi/4) * (OD^2 - S.ID^2);
+Volume_casing  = A_annulus * S.casingLength;
 
-totalPins_oneEnd = S.nRows * S.nPinsPerRow;
-retention_length = S.edgeMarginEnd*2 + S.rowSpacing*(S.nRows-1);
-Volume_retention_ring = (pi/4) * (S.ID^2 - (S.ID - 2*retention_ring_thickness)^2) * retention_length;
-Volume_pins_in_ring = totalPins_oneEnd * pi * (S.pinDia/2)^2 * retention_ring_thickness;
-Mass_retention_rings = (Volume_retention_ring - Volume_pins_in_ring) * S.density_Al * 2;
+% Subtract pin-hole volume in the casing wall (simple cylindrical hole model)
+Volume_holes_casing = totalPins_total * pi * (S.pinDia/2)^2 * S.t;
+Volume_casing_net   = Volume_casing - Volume_holes_casing;
 
-pinLen = S.t + retention_ring_thickness;  % derived engagement length
-Volume_all_pins = totalPins_oneEnd * 2 * pi * (S.pinDia/2)^2 * pinLen;
-Mass_pins = Volume_all_pins * S.density_Al;
+Mass_casing = Volume_casing_net * S.density_CF;
 
+% -----------------------
+% 2) Retention ring mass (Al)
+%    Assumption: ring has through-holes for pins;
+%    we subtract the cylindrical hole volume using pinDia and retRingThk.
+% -----------------------
+retLen = 2*S.firstRowZ + (S.nRows-1)*S.rowSpacing;  % axial ring length
+A_ring = (pi/4) * (S.ID^2 - (S.ID - 2*retRingThk)^2);
+
+Volume_ring_oneEnd      = A_ring * retLen;
+Volume_pinHoles_oneEnd  = totalPins_oneEnd * pi * (S.pinDia/2)^2 * retRingThk;
+
+Mass_retention_rings = (Volume_ring_oneEnd - Volume_pinHoles_oneEnd) ...
+                        * S.density_Al * nEnds_mass;
+
+% -----------------------
+% 3) Pin mass (steel)
+%    Engagement length derived from casing thickness + ring thickness.
+% -----------------------
+pinLen = S.t + retRingThk;
+Volume_pins_total = totalPins_total * pi * (S.pinDia/2)^2 * pinLen;
+Mass_pins = Volume_pins_total * S.density_pin;
+
+% -----------------------
+% Total
+% -----------------------
 Total_Mass = Mass_casing + Mass_retention_rings + Mass_pins;
 
+% -----------------------
+% UI readout
+% -----------------------
 geomOutText = sprintf([ ...
     'Total Pins (one end): %d\n' ...
+    'Total Pins (both ends): %d\n' ...
     'Last Row X: %.2f in\n' ...
     'Max Pins/Row: %d\n' ...
     'Packing OK: %s\n' ...
@@ -52,7 +91,7 @@ geomOutText = sprintf([ ...
     'Retention Mass: %.2f lb\n' ...
     'Pin Mass: %.2f lb\n' ...
     'TOTAL MASS: %.2f lb\n' ], ...
-    totalPins_oneEnd, lastRowX, maxPinsCirc, ret.tfStr(packingOK), ret.tfStr(axialOK), ...
+    totalPins_oneEnd, totalPins_total, lastRowX, maxPinsCirc, ret.tfStr(packingOK), ret.tfStr(axialOK), ...
     Mass_casing, Mass_retention_rings, Mass_pins, Total_Mass);
 
 set(S.txtGeom, 'String', geomOutText);

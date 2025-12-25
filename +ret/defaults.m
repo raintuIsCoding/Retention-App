@@ -38,6 +38,7 @@ S.targets.pinShearFOS_min = 0.323717949;    % Minimum FOS
 S.casingLength = 96;              % Total casing length (in) - for weight calc
 S.density_CF = 0.0535;            % Carbon fiber density (lb/in^3)
 S.density_Al = 0.0975;            % 6061 Aluminum density (lb/in^3)
+S.density_pin = 0.289;            % lb/in^3 for 316 SS (typical)
 
 %% ---------- GEOMETRIC CONSTRAINTS ----------
 S.minCircPitchFactor  = 3.0;       % min center spacing = factor * pinDia

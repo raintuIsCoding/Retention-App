@@ -47,11 +47,13 @@ for t = t_vals
                         nEval = nEval + 1;
 
                         x = [t, nRows, nPinsPerRow, rowSpacing, firstRowZ, pinDia];
-                        [c, ~] = ret.nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, minCircPitchFactor, minAxialPitchFactor, targets);
+                        [c, ~] = ret.nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, ...
+                                 minCircPitchFactor, minAxialPitchFactor, ...
+                                 S.retRingThk, targets);
 
                         if all(c <= 0)
                             nFeasible = nFeasible + 1;
-                            obj = ret.objectiveFunction(x, ID, MEOP_psi, DF, casingLength, density_CF, density_Al);
+                            obj = ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, S.density_pin, S.retRingThk);
 
                             if obj < bestObj
                                 bestObj = obj;
