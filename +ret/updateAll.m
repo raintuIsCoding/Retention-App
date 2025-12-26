@@ -123,7 +123,7 @@ A_holes_per_row = S.pinDia * S.nPinsPerRow * S.t;         % "slot" approx: d*t p
 % Conservative hole interaction model:
 % If rows are within ~kInteract diameters, treat rows as one interacting damaged zone.
 % If rows are spaced farther than that, this "all rows interact" assumption becomes redundant.
-kInteract = 1.0;
+kInteract = 0;
 if S.rowSpacing <= kInteract * S.pinDia
     N_eff = S.nRows;   % close proximity -> count all rows (conservative)
 else

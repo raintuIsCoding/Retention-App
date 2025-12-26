@@ -256,7 +256,7 @@ S.btnLengthMode = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized',
     'Callback',@ret.onAnyInputChanged);
 
 mkLabel('MEOP (psi)', yTop-3*dy);                      S.edMEOP    = mkEdit(S.MEOP_psi,   yTop-3*dy,   'MEOP_psi');
-mkLabel('Design Factor (xMEOP)', yTop-4*dy);           S.edDF      = mkEdit(S.DF,         yTop-4*dy,   'DF');
+mkLabel('Casing Design Factor (xMEOP)', yTop-4*dy);           S.edDF      = mkEdit(S.DF,         yTop-4*dy,   'DF');
 
 mkLabel('Axial Rows', yTop-5*dy);                      S.edRows    = mkEdit(S.nRows,      yTop-5*dy,   'nRows');
 set(S.edRows, 'BackgroundColor', mainYellow);
