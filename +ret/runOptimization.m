@@ -70,6 +70,7 @@ try
         pinIdx = round(xOpt(6));
         pinIdx = max(1, min(pinIdx, numel(S.allowedPinDias)));
         S.pinDia = S.allowedPinDias(pinIdx);
+        S.pinDiaIdx = pinIdx;
 
         % Derived quantities (keep consistent with updateAll)
         S.pinLen = S.t + S.retRingThk;

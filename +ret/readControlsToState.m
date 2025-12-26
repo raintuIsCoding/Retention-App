@@ -8,17 +8,25 @@ S.nRows      = max(1, round(str2double(get(S.edRows,'String'))));
 S.nPinsPerRow= max(1, round(str2double(get(S.edPPR,'String'))));
 S.rowSpacing = str2double(get(S.edRowSp,'String'));
 S.firstRowZ  = str2double(get(S.edFirst,'String'));
-% --- Pin diameter (edit OR dropdown) ---
+% --- Pin diameter (dropdown/popupmenu preferred) ---
 if isfield(S,'ddPinDia') && isgraphics(S.ddPinDia)
-    % dropdown/popupmenu version
     idx = get(S.ddPinDia,'Value');
     idx = max(1, min(idx, numel(S.allowedPinDias)));
+    S.pinDiaIdx = idx;
     S.pinDia = S.allowedPinDias(idx);
+
 elseif isfield(S,'edPinDia') && isgraphics(S.edPinDia)
     % legacy editbox version
     S.pinDia = str2double(get(S.edPinDia,'String'));
+    [~, idx] = min(abs(S.allowedPinDias - S.pinDia));
+    S.pinDiaIdx = idx;
+
 else
-    % fallback: keep whatever is already in S.pinDia
+    % fallback
+    if ~isfield(S,'pinDiaIdx') || isempty(S.pinDiaIdx)
+        [~, idx] = min(abs(S.allowedPinDias - S.pinDia));
+        S.pinDiaIdx = idx;
+    end
 end
 
 % Modeled length toggle

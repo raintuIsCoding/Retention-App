@@ -24,7 +24,16 @@ if success
     set(S.edPPR, 'String', num2str(S.nPinsPerRow));
     set(S.edRowSp, 'String', num2str(S.rowSpacing, '%.4f'));
     set(S.edFirst, 'String', num2str(S.firstRowZ, '%.4f'));
-    set(S.edPinDia, 'String', num2str(S.pinDia, '%.4f'));
+    if isfield(S,'ddPinDia') && isgraphics(S.ddPinDia)
+        if isfield(S,'pinDiaIdx') && ~isempty(S.pinDiaIdx)
+            set(S.ddPinDia,'Value', S.pinDiaIdx);
+        else
+            [~, idx] = min(abs(S.allowedPinDias - S.pinDia));
+            set(S.ddPinDia,'Value', idx);
+        end
+    elseif isfield(S,'edPinDia') && isgraphics(S.edPinDia)
+        set(S.edPinDia,'String', num2str(S.pinDia,'%.4f'));
+    end
     set(S.txtOptStatus, 'String', 'Optimization Complete!');
 else
     set(S.txtOptStatus, 'String', 'Optimization Failed - Try adjusting bounds');
