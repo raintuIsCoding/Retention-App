@@ -21,8 +21,8 @@ S.pinLen      = S.t + S.retRingThk;  % derived pin engagement length (in)
 
 % Loads inputs
 S.MEOP_psi   = 850;   % psi
-S.DF_casing = 1.50;
-S.DF_pin    = 2.00;
+S.DF_casing = 2.5;
+S.DF_pin    = 1.75;
 
 % Pattern toggle
 S.pinPatternMode = "progressive";   % "progressive" or "alternating"

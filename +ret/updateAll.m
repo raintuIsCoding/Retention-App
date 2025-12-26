@@ -54,8 +54,6 @@ Mass_casing = Volume_casing_net * S.density_CF;
 
 % -----------------------
 % 2) Retention ring mass (Al)
-%    Assumption: ring has through-holes for pins;
-%    we subtract the cylindrical hole volume using pinDia and retRingThk.
 % -----------------------
 retLen = 2*S.firstRowZ + (S.nRows-1)*S.rowSpacing;  % axial ring length
 A_ring = (pi/4) * (S.ID^2 - (S.ID - 2*retRingThk)^2);
@@ -68,7 +66,6 @@ Mass_retention_rings = (Volume_ring_oneEnd - Volume_pinHoles_oneEnd) ...
 
 % -----------------------
 % 3) Pin mass (steel)
-%    Engagement length derived from casing thickness + ring thickness.
 % -----------------------
 pinLen = S.t + retRingThk;
 Volume_pins_total = totalPins_total * pi * (S.pinDia/2)^2 * pinLen;
@@ -103,68 +100,57 @@ geomOutText = sprintf([ ...
 set(S.txtGeom, 'String', geomOutText);
 
 %% ===== STRESS CALCS =====
-% Notes:
-% - Hoop stress uses Lame thick-wall hoop stress at the INNER surface (conservative); assumes p_external = 0.
-% - Net-tension hole interaction: assume all rows contribute when rows are "close" (conservative).
-%   A future improvement would be to reduce the effective rows counted when row spacing is large.
-
 n = 1:S.nRows;
 
 % -------- Areas --------
 A_bore = pi * (S.ID/2)^2;  % in^2
 
-% Shear-out area (your current model)
+% Shear-out area
 A_ShearOut = sum((S.rowSpacing*(n-1) + S.firstRowZ) * S.t * 2 * S.nPinsPerRow);
 
 % Net tension area
-A_wall_gross    = (pi/4) * ((S.ID + 2*S.t)^2 - S.ID^2);   % gross wall cross-section
-A_holes_per_row = S.pinDia * S.nPinsPerRow * S.t;         % "slot" approx: d*t per pin per row
+A_wall_gross    = (pi/4) * ((S.ID + 2*S.t)^2 - S.ID^2);
+A_holes_per_row = S.pinDia * S.nPinsPerRow * S.t;
 
-% Conservative hole interaction model:
-% If rows are within ~kInteract diameters, treat rows as one interacting damaged zone.
-% If rows are spaced farther than that, this "all rows interact" assumption becomes redundant.
+% Hole interaction model
 kInteract = 0;
 if S.rowSpacing <= kInteract * S.pinDia
-    N_eff = S.nRows;   % close proximity -> count all rows (conservative)
+    N_eff = S.nRows;
 else
-    N_eff = 1;         % spaced out -> single-row critical section (less conservative)
+    N_eff = 1;
 end
-
 A_tension = A_wall_gross - N_eff * A_holes_per_row;
 
-% Safety clamps to avoid divide-by-zero / NaNs
+% Safety clamps
 if ~isfinite(A_tension)  || A_tension  <= 0, A_tension  = 1e-6; end
 if ~isfinite(A_ShearOut) || A_ShearOut <= 0, A_ShearOut = 1e-6; end
 
 % -------- Loads --------
-p_design = S.MEOP_psi * S.DF;     % psi
-F_axial  = p_design * A_bore;     % lbf
-F_perPin = F_axial / max(1, totalPins_oneEnd);   % lbf average per pin (one end)
+p_design_casing = S.MEOP_psi * S.DF_casing;  % psi
+p_design_pin    = S.MEOP_psi * S.DF_pin;     % psi
+
+F_axial_casing = p_design_casing * A_bore;   % lbf
+F_axial_pin    = p_design_pin    * A_bore;   % lbf
+
+% Two per-pin forces:
+F_perPin_casing = F_axial_casing / max(1, totalPins_oneEnd); % for member-bearing
+F_perPin_pin    = F_axial_pin    / max(1, totalPins_oneEnd); % for pin shear
 
 % -------- Stresses (KSI) --------
-Stress_ShearOut = (F_axial / A_ShearOut) / 1000;
-% KSI - Axial end load divided by your modeled net shear-out area
-% (2 * "distance to edge" * wall thickness summed across rows).
-% This is a useful trend metric; it can become optimistic/nonphysical if pin size grows large
-% relative to the remaining ligament geometry.
+Stress_ShearOut = (F_axial_casing / A_ShearOut) / 1000;
+Net_Tension     = (F_axial_casing / A_tension)  / 1000;
 
-Net_Tension = (F_axial / A_tension) / 1000;
-% KSI - Conservative net-section model: counts multiple rows as interacting when row spacing is small.
-% If rows are far apart (spacing >> pin diameter), only a single-row critical section should dominate.
-% That "row decoupling" case is not fully modeled yet; we approximate it via N_eff.
-
-A_pin = (pi/4) * S.pinDia^2;    % in^2
+A_pin = (pi/4) * S.pinDia^2;
 if ~isfinite(A_pin) || A_pin <= 0, A_pin = 1e-6; end
-Pin_Shear = (F_perPin / A_pin) / 1000;           % KSI - single-plane shear per pin (average)
 
-Bearing = (F_perPin / (S.pinDia * S.t)) / 1000;  % KSI - bearing per pin (average)
+Pin_Shear = (F_perPin_pin / A_pin) / 1000;
+
+% Bearing should be casing DF (member failure):
+Bearing  = (F_perPin_casing / (S.pinDia * S.t)) / 1000;
 
 % Lame thick-wall hoop stress at inner surface (conservative); p_external = 0
-Hoop = (p_design * (((S.ID+2*S.t)^2 + S.ID^2) / ((S.ID+2*S.t)^2 - (S.ID)^2))) / 1000;
-% KSI - Thick-wall (Lame) hoop stress at the inner surface.
-% This will generally be higher than a thin-wall estimate used in some simpler calculators.
-
-Axial = Hoop/2; % KSI - closed-end cylinder axial stress approximation
+Hoop  = (p_design_casing * (((S.ID+2*S.t)^2 + S.ID^2) / ((S.ID+2*S.t)^2 - (S.ID)^2))) / 1000;
+Axial = Hoop/2;
 
 if isfield(S,'allowedPinDias')
     [~,i] = min(abs(S.allowedPinDias - S.pinDia));
@@ -172,17 +158,20 @@ if isfield(S,'allowedPinDias')
 end
 
 % -------- FOS --------
-Pin_Shear_Strength = 43.5; % KSI
+Pin_Shear_Strength = 75; % KSI
 if ~isfinite(Pin_Shear) || Pin_Shear <= 0
     Pin_Shear_FOS = inf;
 else
-    Pin_Shear_FOS = (Pin_Shear_Strength/Pin_Shear) - 2; % keep your calibration offset
+    Pin_Shear_FOS = (Pin_Shear_Strength/Pin_Shear) - 2;
 end
 
 stressOutText = sprintf([ ...
-    'Design Pressure: %.1f psi\n' ...
-    'Axial End Force: %.0f lbf\n' ...
-    'Avg Force per Pin: %.1f lbf\n' ...
+    'Design Pressure (Casing): %.1f psi\n' ...
+    'Design Pressure (Pins):   %.1f psi\n' ...
+    'Axial End Force (Casing): %.0f lbf\n' ...
+    'Axial End Force (Pins):   %.0f lbf\n' ...
+    'Avg Force per Pin (Casing DF): %.1f lbf\n' ...
+    'Avg Force per Pin (Pin DF):    %.1f lbf\n' ...
     'Shear Out Stress: %.4f KSI\n' ...
     'Net Tension: %.4f KSI\n' ...
     'Pin Shear: %.4f KSI\n' ...
@@ -191,7 +180,9 @@ stressOutText = sprintf([ ...
     'Axial: %.4f KSI\n' ...
     '\n' ...
     'Pin Shear FOS: %.4f \n' ], ...
-    p_design, F_axial, F_perPin, Stress_ShearOut, Net_Tension, Pin_Shear, Bearing, Hoop, Axial, Pin_Shear_FOS);
+    p_design_casing, p_design_pin, F_axial_casing, F_axial_pin, ...
+    F_perPin_casing, F_perPin_pin, ...
+    Stress_ShearOut, Net_Tension, Pin_Shear, Bearing, Hoop, Axial, Pin_Shear_FOS);
 
 set(S.txtStress, 'String', stressOutText);
 

@@ -5,7 +5,8 @@ fprintf('\n=== RUNNING GRID SEARCH OPTIMIZATION ===\n');
 
 ID = S.ID;
 MEOP_psi = S.MEOP_psi;
-DF = S.DF;
+DF_casing = S.DF_casing;
+DF_pin    = S.DF_pin;
 minCircPitchFactor = S.minCircPitchFactor;
 minAxialPitchFactor = S.minAxialPitchFactor;
 L_casing = S.L_casing;
@@ -17,9 +18,9 @@ density_Al = S.density_Al;
 targets = S.targets;
 bounds = S.optBounds;
 
-p_design = MEOP_psi * DF;
+p_design_pin = MEOP_psi * DF_pin;
 A_bore = pi * (ID/2)^2;
-F_axial = p_design * A_bore;
+F_axial = p_design_pin * A_bore;
 fprintf('Design axial force: %.0f lbf\n', F_axial);
 
 if bounds.t(2) > bounds.t(1), t_vals = linspace(bounds.t(1), bounds.t(2), 8); else, t_vals = bounds.t(1); end
@@ -49,7 +50,7 @@ for t = t_vals
 
                         nEval = nEval + 1;
 
-                        [c, ~] = ret.nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, ...
+                        [c, ~] = ret.nonlinearConstraints(x, ID, MEOP_psi, DF_casing, DF_pin, L_casing, ...
                              minCircPitchFactor, minAxialPitchFactor, ...
                              S.retRingThk, targets, S.allowedPinDias);
 

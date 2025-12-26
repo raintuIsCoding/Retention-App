@@ -4,7 +4,8 @@ success = false;
 % Pull constants from S (optimizer treats these as fixed)
 ID = S.ID;
 MEOP_psi = S.MEOP_psi;
-DF = S.DF;
+DF_casing = S.DF_casing;
+DF_pin    = S.DF_pin;
 
 minCircPitchFactor = S.minCircPitchFactor;
 minAxialPitchFactor = S.minAxialPitchFactor;
@@ -43,7 +44,7 @@ allowedPinDias = S.allowedPinDias;
 
 objFun = @(x) ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk, allowedPinDias);
 
-nonlconFun = @(x) ret.nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, ...
+nonlconFun = @(x) ret.nonlinearConstraints(x, ID, MEOP_psi, DF_casing, DF_pin, L_casing, ...
                                           minCircPitchFactor, minAxialPitchFactor, ...
                                           retRingThk, targets, allowedPinDias);
 

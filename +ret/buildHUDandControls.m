@@ -255,22 +255,23 @@ S.btnLengthMode = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized',
     'FontSize', fontsize2, ...
     'Callback',@ret.onAnyInputChanged);
 
-mkLabel('MEOP (psi)', yTop-3*dy);                      S.edMEOP    = mkEdit(S.MEOP_psi,   yTop-3*dy,   'MEOP_psi');
-mkLabel('Casing Design Factor (xMEOP)', yTop-4*dy);           S.edDF      = mkEdit(S.DF,         yTop-4*dy,   'DF');
+mkLabel('MEOP (psi)', yTop-3*dy);                      S.edMEOP       = mkEdit(S.MEOP_psi,   yTop-3*dy,   'MEOP_psi');
+mkLabel('Casing Design Factor (xMEOP)', yTop-4*dy);    S.edDFcasing   = mkEdit(S.DF_casing,  yTop-4*dy,   'DF_casing');
+mkLabel('Pin Design Factor (xMEOP)', yTop-5*dy);       S.edDFpin      = mkEdit(S.DF_pin,     yTop-5*dy,   'DF_pin');
 
-mkLabel('Axial Rows', yTop-5*dy);                      S.edRows    = mkEdit(S.nRows,      yTop-5*dy,   'nRows');
+mkLabel('Axial Rows', yTop-6*dy);                      S.edRows       = mkEdit(S.nRows,      yTop-6*dy,   'nRows');
 set(S.edRows, 'BackgroundColor', mainYellow);
 
-mkLabel('Pins per Row', yTop-6*dy);                    S.edPPR     = mkEdit(S.nPinsPerRow,yTop-6*dy,   'nPinsPerRow');
+mkLabel('Pins per Row', yTop-7*dy);                    S.edPPR        = mkEdit(S.nPinsPerRow,yTop-7*dy,  'nPinsPerRow');
 set(S.edPPR, 'BackgroundColor', mainYellow);
 
-mkLabel('Row Spacing (in)', yTop-7*dy);                S.edRowSp   = mkEdit(S.rowSpacing, yTop-7*dy,   'rowSpacing');
+mkLabel('Row Spacing (in)', yTop-8*dy);                S.edRowSp      = mkEdit(S.rowSpacing, yTop-8*dy,  'rowSpacing');
 set(S.edRowSp, 'BackgroundColor', mainYellow);
 
-mkLabel('First Row Offset (in)', yTop-8*dy);           S.edFirst   = mkEdit(S.firstRowZ,  yTop-8*dy,   'firstRowZ');
+mkLabel('First Row Offset (in)', yTop-9*dy);           S.edFirst      = mkEdit(S.firstRowZ,  yTop-9*dy,  'firstRowZ');
 set(S.edFirst, 'BackgroundColor', mainYellow);
 
-mkLabel('Pin Diameter (in)', yTop-9*dy);
+mkLabel('Pin Diameter (in)', yTop-10*dy);
 
 pinStrs = compose('%.4f', S.allowedPinDias);
 [~, idx] = min(abs(S.allowedPinDias - S.pinDia)); % nearest match
@@ -278,7 +279,7 @@ pinStrs = compose('%.4f', S.allowedPinDias);
 S.ddPinDia = uicontrol(S.pIn, ...
     'Style','popupmenu', ...
     'Units','normalized', ...
-    'Position',[xC (yTop-9*dy) wC h], ...
+    'Position',[xC (yTop-10*dy) wC h], ...
     'String', pinStrs, ...
     'Value', idx, ...
     'BackgroundColor', mainYellow, ...
@@ -288,12 +289,12 @@ S.ddPinDia = uicontrol(S.pIn, ...
 
 set(S.ddPinDia,'ForegroundColor',[0 0 0]);
 
-mkLabel('Pin Pattern*', yTop-10*dy);
+mkLabel('Pin Pattern*', yTop-11*dy);
 isAlt = (S.pinPatternMode == "alternating");
 btnStr = "Pattern: Progressive";
 if isAlt, btnStr = "Pattern: Alternating"; end
 S.btnPattern = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
-    'Position',[xC (yTop-10*dy) wC h], ...
+    'Position',[xC (yTop-11*dy) wC h], ...
     'String', btnStr, ...
     'Value', isAlt, ...
     'BackgroundColor', [1 1 1], ...

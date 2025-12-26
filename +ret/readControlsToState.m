@@ -3,11 +3,13 @@ function S = readControlsToState(S)
 S.ID         = str2double(get(S.edID,'String'));
 S.t          = str2double(get(S.edT,'String'));
 S.MEOP_psi   = str2double(get(S.edMEOP,'String'));
-S.DF         = str2double(get(S.edDF,'String'));
+S.DF_casing  = str2double(get(S.edDFcasing,'String'));
+S.DF_pin     = str2double(get(S.edDFpin,'String'));
 S.nRows      = max(1, round(str2double(get(S.edRows,'String'))));
 S.nPinsPerRow= max(1, round(str2double(get(S.edPPR,'String'))));
 S.rowSpacing = str2double(get(S.edRowSp,'String'));
 S.firstRowZ  = str2double(get(S.edFirst,'String'));
+
 % --- Pin diameter (dropdown/popupmenu preferred) ---
 if isfield(S,'ddPinDia') && isgraphics(S.ddPinDia)
     idx = get(S.ddPinDia,'Value');
@@ -65,7 +67,8 @@ S.edgeMarginEnd = S.t;
 if ~isfinite(S.ID) || S.ID<=0, S.ID = 8.0; end
 if ~isfinite(S.t)  || S.t<=0,  S.t = 0.25; end
 if ~isfinite(S.MEOP_psi) || S.MEOP_psi<=0, S.MEOP_psi = 900; end
-if ~isfinite(S.DF)       || S.DF<=0,       S.DF = 1.5; end
+if ~isfinite(S.DF_casing) || S.DF_casing<=0, S.DF_casing = 1.5; end
+if ~isfinite(S.DF_pin)    || S.DF_pin<=0,    S.DF_pin    = 2.0; end
 if ~isfinite(S.rowSpacing) || S.rowSpacing<=0, S.rowSpacing = 0.75; end
 if ~isfinite(S.firstRowZ)  || S.firstRowZ<0,   S.firstRowZ  = 0.75; end
 if ~isfinite(S.pinDia)     || S.pinDia<=0,     S.pinDia     = 0.375; end
@@ -74,7 +77,8 @@ if ~isfinite(S.pinDia)     || S.pinDia<=0,     S.pinDia     = 0.375; end
 set(S.edRows,'String', num2str(S.nRows));
 set(S.edPPR,'String',  num2str(S.nPinsPerRow));
 set(S.edMEOP,'String', num2str(S.MEOP_psi));
-set(S.edDF,'String',   num2str(S.DF));
+set(S.edDFcasing,'String', num2str(S.DF_casing));
+set(S.edDFpin,'String',    num2str(S.DF_pin));
 
 % Also keep targets/bounds synced
 S = ret.readConstraintsFromUI(S);
