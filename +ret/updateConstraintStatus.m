@@ -1,65 +1,83 @@
 function S = updateConstraintStatus(S, shearOut, netTension, pinShear, bearing, hoop, axial, FOS)
 
-status = {};
-allPass = true;
-
-if shearOut <= S.targets.shearOut_max
-    status{end+1} = sprintf('Shear Out: %.2f <= %.2f OK', shearOut, S.targets.shearOut_max);
-else
-    status{end+1} = sprintf('Shear Out: %.2f > %.2f FAIL', shearOut, S.targets.shearOut_max);
-    allPass = false;
+% Expect 8 lines: 7 constraints + 1 banner
+if ~isfield(S,'txtOptLines') || numel(S.txtOptLines) < 8 || ~all(isgraphics(S.txtOptLines))
+    return; % UI not built yet
 end
 
-if netTension <= S.targets.netTension_max
-    status{end+1} = sprintf('Net Tens:  %.2f <= %.2f OK', netTension, S.targets.netTension_max);
+targets = S.targets;
+
+% Soft PASS margin (5% by default)
+marginFrac = S.marginFrac;   % 0.5 = allow 5% violation to still show PASS
+
+% Formatting helpers
+fmtLine = @(name, val, lim, pass, sense) sprintf('%-10s: %6.2f %2s %6.2f  %s', ...
+    name, val, sense, lim, tern(pass,'PASS','FAIL'));
+
+colPass = [0.85 1.00 0.85];
+colFail = [1.00 0.85 0.85];
+
+passAll = true;
+
+% 1 Shear Out (<=)
+lim = targets.shearOut_max;
+softLim = lim * (1 + marginFrac);
+pass = (shearOut <= softLim); passAll = passAll && pass;
+setLine(1, fmtLine('Shear Out', shearOut, lim, pass, '<='), pass);
+
+% 2 Net Tension (<=)
+lim = targets.netTension_max;
+softLim = lim * (1 + marginFrac);
+pass = (netTension <= softLim); passAll = passAll && pass;
+setLine(2, fmtLine('Net Tens', netTension, lim, pass, '<='), pass);
+
+% 3 Pin Shear (<=)
+lim = targets.pinShear_max;
+softLim = lim * (1 + marginFrac);
+pass = (pinShear <= softLim); passAll = passAll && pass;
+setLine(3, fmtLine('Pin Shear', pinShear, lim, pass, '<='), pass);
+
+% 4 Bearing (<=)
+lim = targets.bearing_max;
+softLim = lim * (1 + marginFrac);
+pass = (bearing <= softLim); passAll = passAll && pass;
+setLine(4, fmtLine('Bearing', bearing, lim, pass, '<='), pass);
+
+% 5 Hoop (<=)
+lim = targets.hoop_max;
+softLim = lim * (1 + marginFrac);
+pass = (hoop <= softLim); passAll = passAll && pass;
+setLine(5, fmtLine('Hoop', hoop, lim, pass, '<='), pass);
+
+% 6 Axial (<=)
+lim = targets.axial_max;
+softLim = lim * (1 + marginFrac);
+pass = (axial <= softLim); passAll = passAll && pass;
+setLine(6, fmtLine('Axial', axial, lim, pass, '<='), pass);
+
+% 7 Pin FOS (>=)
+lim = targets.pinShearFOS_min;
+softLim = lim * (1 - marginFrac);   % allow 10% under target and still show PASS
+pass = (FOS >= softLim); passAll = passAll && pass;
+setLine(7, fmtLine('Pin FOS', FOS, lim, pass, '>='), pass);
+
+% 8 Banner + panel background
+if passAll
+    set(S.pOptResults, 'BackgroundColor', [0.90 1.00 0.90]);
+    setLine(8, '--- ALL CONSTRAINTS MET ---', true);
 else
-    status{end+1} = sprintf('Net Tens:  %.2f > %.2f FAIL', netTension, S.targets.netTension_max);
-    allPass = false;
+    set(S.pOptResults, 'BackgroundColor', [1.00 0.90 0.90]);
+    setLine(8, '--- CONSTRAINTS VIOLATED ---', false);
 end
 
-if pinShear <= S.targets.pinShear_max
-    status{end+1} = sprintf('Pin Shear: %.2f <= %.2f OK', pinShear, S.targets.pinShear_max);
-else
-    status{end+1} = sprintf('Pin Shear: %.2f > %.2f FAIL', pinShear, S.targets.pinShear_max);
-    allPass = false;
+    function setLine(i, str, isPass)
+        set(S.txtOptLines(i), 'String', str);
+        set(S.txtOptLines(i), 'BackgroundColor', tern(isPass, colPass, colFail));
+        set(S.txtOptLines(i), 'ForegroundColor', [0 0 0]);
+    end
+
 end
 
-if bearing <= S.targets.bearing_max
-    status{end+1} = sprintf('Bearing:   %.2f <= %.2f OK', bearing, S.targets.bearing_max);
-else
-    status{end+1} = sprintf('Bearing:   %.2f > %.2f FAIL', bearing, S.targets.bearing_max);
-    allPass = false;
-end
-
-if hoop <= S.targets.hoop_max
-    status{end+1} = sprintf('Hoop:      %.2f <= %.2f OK', hoop, S.targets.hoop_max);
-else
-    status{end+1} = sprintf('Hoop:      %.2f > %.2f FAIL', hoop, S.targets.hoop_max);
-    allPass = false;
-end
-
-if axial <= S.targets.axial_max
-    status{end+1} = sprintf('Axial:     %.2f <= %.2f OK', axial, S.targets.axial_max);
-else
-    status{end+1} = sprintf('Axial:     %.2f > %.2f FAIL', axial, S.targets.axial_max);
-    allPass = false;
-end
-
-if FOS >= S.targets.pinShearFOS_min
-    status{end+1} = sprintf('Pin FOS:   %.2f >= %.2f OK', FOS, S.targets.pinShearFOS_min);
-else
-    status{end+1} = sprintf('Pin FOS:   %.2f < %.2f FAIL', FOS, S.targets.pinShearFOS_min);
-    allPass = false;
-end
-
-if allPass
-    status{end+1} = '--- ALL CONSTRAINTS MET ---';
-    set(S.pOptResults, 'BackgroundColor', [0.9 1 0.9]);
-else
-    status{end+1} = '--- CONSTRAINTS VIOLATED ---';
-    set(S.pOptResults, 'BackgroundColor', [1 0.9 0.9]);
-end
-
-set(S.txtOptResults, 'String', strjoin(status, '\n'));
-
+function out = tern(cond, a, b)
+if cond, out = a; else, out = b; end
 end

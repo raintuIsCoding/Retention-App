@@ -2,6 +2,8 @@ function S = defaults()
 %RET.DEFAULTS Initialize default state struct
 
 %% ---------- DEFAULT INPUTS ----------
+S.MIII = (8/6);
+S.marginFrac = 0.01;
 S.ID          = 8.0;      % inner diameter of casing (in)
 S.t           = 0.25;     % wall thickness (in)
 S.L_casing    = 10.0;     % length of modeled region (in)
