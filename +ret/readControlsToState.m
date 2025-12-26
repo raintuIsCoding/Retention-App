@@ -8,7 +8,18 @@ S.nRows      = max(1, round(str2double(get(S.edRows,'String'))));
 S.nPinsPerRow= max(1, round(str2double(get(S.edPPR,'String'))));
 S.rowSpacing = str2double(get(S.edRowSp,'String'));
 S.firstRowZ  = str2double(get(S.edFirst,'String'));
-S.pinDia     = str2double(get(S.edPinDia,'String'));
+% --- Pin diameter (edit OR dropdown) ---
+if isfield(S,'ddPinDia') && isgraphics(S.ddPinDia)
+    % dropdown/popupmenu version
+    idx = get(S.ddPinDia,'Value');
+    idx = max(1, min(idx, numel(S.allowedPinDias)));
+    S.pinDia = S.allowedPinDias(idx);
+elseif isfield(S,'edPinDia') && isgraphics(S.edPinDia)
+    % legacy editbox version
+    S.pinDia = str2double(get(S.edPinDia,'String'));
+else
+    % fallback: keep whatever is already in S.pinDia
+end
 
 % Modeled length toggle
 isFull = (get(S.btnLengthMode, 'Value') == 1);

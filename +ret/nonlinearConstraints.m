@@ -1,6 +1,5 @@
-function [c, ceq] = nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, ...
-                                         minCircPitchFactor, minAxialPitchFactor, ...
-                                         retRingThk, targets)
+function [c, ceq] = nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, minCircPitchFactor, minAxialPitchFactor, retRingThk, targets, allowedPinDias)
+
 % ret.nonlinearConstraints
 % Nonlinear inequality constraints c(x) <= 0
 %
@@ -14,7 +13,9 @@ nRows       = round(x(2));
 nPinsPerRow = round(x(3));
 rowSpacing  = x(4);
 firstRowZ   = x(5);
-pinDia      = x(6);
+pinIdx = round(x(6));
+pinIdx = max(1, min(pinIdx, numel(allowedPinDias)));
+pinDia = allowedPinDias(pinIdx);
 
 % Guard against nonsense (GA sometimes samples negatives)
 nRows       = max(1, nRows);

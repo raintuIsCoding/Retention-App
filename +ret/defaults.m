@@ -27,6 +27,8 @@ S.DF         = 1.5;   % design factor (MEOP multiplier)
 S.pinPatternMode = "progressive";   % "progressive" or "alternating"
 S.altStartPhase  = 0;               % 0 or 1
 
+S.allowedPinDias = [0.25, 0.3125, 0.375, 0.5];  % in
+
 %% ---------- TARGET STRESS LIMITS ---------- (All set by MIII max pressure motor pressure)
 S.targets.shearOut_max    = 1.837831702;    % KSI
 S.targets.netTension_max  = 11.50766592;    % KSI
@@ -37,7 +39,7 @@ S.targets.axial_max       = 7.55625;        % KSI
 S.targets.pinShearFOS_min = 0.323717949;    % Minimum FOS
 
 %% ---------- CASING PARAMETERS ----------
-S.casingLength = 96;              % Total casing length (in) - for weight calc
+S.casingLength = 91;              % Total casing length (in) - for weight calc
 S.density_CF = 0.0535;            % Carbon fiber density (lb/in^3)
 S.density_Al = 0.0975;            % 6061 Aluminum density (lb/in^3)
 S.density_pin = 0.289;            % lb/in^3 for 316 SS (typical)

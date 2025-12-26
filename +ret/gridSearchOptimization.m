@@ -53,7 +53,7 @@ for t = t_vals
 
                         if all(c <= 0)
                             nFeasible = nFeasible + 1;
-                            obj = ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, S.density_pin, S.retRingThk);
+                            obj = ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, S.density_pin, S.retRingThk, S.allowedPinDias);
 
                             if obj < bestObj
                                 bestObj = obj;

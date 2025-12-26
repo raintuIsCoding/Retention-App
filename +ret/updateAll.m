@@ -123,7 +123,7 @@ A_holes_per_row = S.pinDia * S.nPinsPerRow * S.t;         % "slot" approx: d*t p
 % Conservative hole interaction model:
 % If rows are within ~kInteract diameters, treat rows as one interacting damaged zone.
 % If rows are spaced farther than that, this "all rows interact" assumption becomes redundant.
-kInteract = 3.0;
+kInteract = 1.0;
 if S.rowSpacing <= kInteract * S.pinDia
     N_eff = S.nRows;   % close proximity -> count all rows (conservative)
 else
@@ -165,6 +165,11 @@ Hoop = (p_design * (((S.ID+2*S.t)^2 + S.ID^2) / ((S.ID+2*S.t)^2 - (S.ID)^2))) / 
 % This will generally be higher than a thin-wall estimate used in some simpler calculators.
 
 Axial = Hoop/2; % KSI - closed-end cylinder axial stress approximation
+
+if isfield(S,'allowedPinDias')
+    [~,i] = min(abs(S.allowedPinDias - S.pinDia));
+    S.pinDia = S.allowedPinDias(i);
+end
 
 % -------- FOS --------
 Pin_Shear_Strength = 43.5; % KSI

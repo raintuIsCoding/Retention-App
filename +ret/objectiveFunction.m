@@ -1,4 +1,4 @@
-function obj = objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk)
+function obj = objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk, allowedPinDias)
 % ret.objectiveFunction
 % Objective: minimize total mass of full hardware (both ends), consistent with updateAll.
 %
@@ -14,7 +14,9 @@ nRows       = round(x(2));
 nPinsPerRow = round(x(3));
 rowSpacing  = x(4);
 firstRowZ   = x(5);
-pinDia      = x(6);
+pinIdx = round(x(6));
+pinIdx = max(1, min(pinIdx, numel(allowedPinDias)));
+pinDia = allowedPinDias(pinIdx);
 
 % Full hardware assumption
 nEnds_mass = 2;

@@ -2,6 +2,14 @@ function onOptimizeClicked(src, ~)
 S = guidata(src);
 
 S = ret.readControlsToState(S);
+
+% ensure pinDia matches dropdown if present
+if isfield(S,'ddPinDia') && isgraphics(S.ddPinDia)
+    idx = get(S.ddPinDia,'Value');
+    idx = max(1, min(idx, numel(S.allowedPinDias)));
+    S.pinDia = S.allowedPinDias(idx);
+end
+
 S = ret.readConstraintsFromUI(S);
 S = ret.readBoundsFromUI(S);
 

@@ -21,22 +21,31 @@ retRingThk = S.retRingThk;
 targets = S.targets;
 bounds  = S.optBounds;
 
-x0 = [S.t, S.nRows, S.nPinsPerRow, S.rowSpacing, S.firstRowZ, S.pinDia]; %#ok<NASGU>
+% --- Pin diameter is a discrete choice: optimize its INDEX ---
+if ~isfield(S,'allowedPinDias') || isempty(S.allowedPinDias)
+    error('S.allowedPinDias must be defined (e.g., [0.25 0.3125 0.375 0.5]).');
+end
+[~, pinIdx0] = min(abs(S.allowedPinDias - S.pinDia));  % robust
+
+x0 = [S.t, S.nRows, S.nPinsPerRow, S.rowSpacing, S.firstRowZ, pinIdx0]; %#ok<NASGU>
 
 lb = [bounds.t(1), bounds.nRows(1), bounds.nPinsPerRow(1), ...
-      bounds.rowSpacing(1), bounds.firstRowZ(1), bounds.pinDia(1)];
-ub = [bounds.t(2), bounds.nRows(2), bounds.nPinsPerRow(2), ...
-      bounds.rowSpacing(2), bounds.firstRowZ(2), bounds.pinDia(2)];
+      bounds.rowSpacing(1), bounds.firstRowZ(1), 1];
 
-% Integer decision variables: nRows, nPinsPerRow
-intcon = [2, 3];
+ub = [bounds.t(2), bounds.nRows(2), bounds.nPinsPerRow(2), ...
+      bounds.rowSpacing(2), bounds.firstRowZ(2), numel(S.allowedPinDias)];
+
+% Integer decision variables: nRows, nPinsPerRow, pinIdx
+intcon = [2, 3, 6];
 
 % Updated objective + constraints (match updateAll physics)
-objFun = @(x) ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk);
+allowedPinDias = S.allowedPinDias;
+
+objFun = @(x) ret.objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk, allowedPinDias);
 
 nonlconFun = @(x) ret.nonlinearConstraints(x, ID, MEOP_psi, DF, L_casing, ...
                                           minCircPitchFactor, minAxialPitchFactor, ...
-                                          retRingThk, targets);
+                                          retRingThk, targets, allowedPinDias);
 
 options = optimoptions('ga', ...
     'Display', 'iter', ...
@@ -57,14 +66,16 @@ try
         S.nPinsPerRow = round(xOpt(3));
         S.rowSpacing  = xOpt(4);
         S.firstRowZ   = xOpt(5);
-        S.pinDia      = xOpt(6);
+
+        pinIdx = round(xOpt(6));
+        pinIdx = max(1, min(pinIdx, numel(S.allowedPinDias)));
+        S.pinDia = S.allowedPinDias(pinIdx);
 
         % Derived quantities (keep consistent with updateAll)
-        S.pinLen = S.t + S.retRingThk;  % engagement length
+        S.pinLen = S.t + S.retRingThk;
 
         % Optional: remove legacy field if it exists (avoid confusion)
         if isfield(S,'edgeMarginEnd')
-            % Not used anymore; firstRowZ defines symmetric end margin
             S = rmfield(S,'edgeMarginEnd');
         end
 
