@@ -13,7 +13,7 @@ S.lengthMode  = "aftOnly"; % "aftOnly" (10 in) or "full" (96 in)
 S.mirrorPins  = false;     % when true, mirror pins to forward end for display
 S.nRows       = 3;        % axial rows of pins
 S.nPinsPerRow = 12;       % pins around circumference per row
-S.rowSpacing  = 0.5;      % axial spacing between rows (in)
+S.rowSpacing  = 0.75;      % axial spacing between rows (in)
 S.firstRowZ   = 0.75;     % axial position of first row from x=0 (in)
 S.pinDia      = 0.375;    % pin diameter (in)
 S.retRingThk  = 0.25;     % retention ring thickness (in)
