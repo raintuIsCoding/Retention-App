@@ -31,12 +31,12 @@ S.altStartPhase  = 0;               % 0 or 1
 S.allowedPinDias = [0.25, 0.3125, 0.375, 0.5];  % in
 
 %% ---------- TARGET STRESS LIMITS ---------- (All set by MIII max pressure motor pressure)
-S.targets.shearOut_max    = 3.075;    % KSI
-S.targets.netTension_max  = 13.525;    % KSI
+S.targets.shearOut_max    = 2.04;    % KSI
+S.targets.netTension_max  = 10.83;    % KSI
 S.targets.pinShear_max    = 21.84;          % KSI
-S.targets.bearing_max     = 30.625;    % KSI
-S.targets.hoop_max        = 25.225;        % KSI
-S.targets.axial_max       = 12.6;        % KSI
+S.targets.bearing_max     = 24.5;    % KSI
+S.targets.hoop_max        = 20.17;        % KSI
+S.targets.axial_max       = 10.09;        % KSI
 S.targets.pinShearFOS_min = 1;    % Minimum FOS
 
 %% ---------- CASING PARAMETERS ----------
