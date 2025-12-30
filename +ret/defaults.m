@@ -4,23 +4,23 @@ function S = defaults()
 %% ---------- DEFAULT INPUTS ----------
 S.MIII = (8/6);
 S.marginFrac = 0.01;
-S.ID          = 8.0;      % inner diameter of casing (in)
-S.t           = 0.25;     % wall thickness (in)
+S.ID          = 6.0;      % inner diameter of casing (in)
+S.t           = 0.20;     % wall thickness (in)
 S.L_casing    = 10.0;     % length of modeled region (in)
 S.lengthMode  = "aftOnly"; % "aftOnly" (10 in) or "full" (96 in)
 S.mirrorPins  = false;     % when true, mirror pins to forward end for display
 S.lengthMode  = "aftOnly"; % "aftOnly" (10 in) or "full" (96 in)
 S.mirrorPins  = false;     % when true, mirror pins to forward end for display
 S.nRows       = 3;        % axial rows of pins
-S.nPinsPerRow = 12;       % pins around circumference per row
-S.rowSpacing  = 0.75;      % axial spacing between rows (in)
+S.nPinsPerRow = 10;       % pins around circumference per row
+S.rowSpacing  = 0.5;      % axial spacing between rows (in)
 S.firstRowZ   = 0.75;     % axial position of first row from x=0 (in)
-S.pinDia      = 0.375;    % pin diameter (in)
+S.pinDia      = 0.25;    % pin diameter (in)
 S.retRingThk  = 0.25;     % retention ring thickness (in)
 S.pinLen      = S.t + S.retRingThk;  % derived pin engagement length (in)
 
 % Loads inputs
-S.MEOP_psi   = 850;   % psi
+S.MEOP_psi   = 650;   % psi
 S.DF_casing = 2;
 S.DF_pin    = 1.75;
 
@@ -31,13 +31,13 @@ S.altStartPhase  = 0;               % 0 or 1
 S.allowedPinDias = [0.25, 0.3125, 0.375, 0.5];  % in
 
 %% ---------- TARGET STRESS LIMITS ---------- (All set by MIII max pressure motor pressure)
-S.targets.shearOut_max    = 2.04;    % KSI
+S.targets.shearOut_max    = 2.45;    % KSI
 S.targets.netTension_max  = 10.83;    % KSI
 S.targets.pinShear_max    = 21.84;          % KSI
 S.targets.bearing_max     = 24.5;    % KSI
 S.targets.hoop_max        = 20.17;        % KSI
 S.targets.axial_max       = 10.09;        % KSI
-S.targets.pinShearFOS_min = 1;    % Minimum FOS
+S.targets.pinShearFOS_min = 1.43;    % Minimum FOS
 
 %% ---------- CASING PARAMETERS ----------
 S.casingLength = 91;              % Total casing length (in) - for weight calc
