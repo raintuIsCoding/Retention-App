@@ -1,0 +1,120 @@
+function [c, ceq] = nonlinearConstraints(x, ID, MEOP_psi, DF_casing, DF_pin, L_casing, minCircPitchFactor, minAxialPitchFactor, retRingThk, targets, allowedPinDias)
+
+% ret.nonlinearConstraints
+% Nonlinear inequality constraints c(x) <= 0
+%
+% x = [t, nRows, nPinsPerRow, rowSpacing, firstRowZ, pinDiaIdx]
+
+ceq = [];
+
+% Unpack
+t           = x(1);
+nRows       = round(x(2));
+nPinsPerRow = round(x(3));
+rowSpacing  = x(4);
+firstRowZ   = x(5);
+pinIdx      = round(x(6));
+
+pinIdx = max(1, min(pinIdx, numel(allowedPinDias)));
+pinDia = allowedPinDias(pinIdx);
+
+% Guard against nonsense
+nRows       = max(1, nRows);
+nPinsPerRow = max(1, nPinsPerRow);
+t           = max(1e-6, t);
+rowSpacing  = max(1e-6, rowSpacing);
+firstRowZ   = max(0, firstRowZ);
+pinDia      = max(1e-6, pinDia);
+
+% Derived radii
+r_i = ID/2;
+r_o = r_i + t;
+
+% -----------------------
+% Geometry constraints
+% -----------------------
+circumference = 2*pi*r_o;
+minPitch = minCircPitchFactor * pinDia;
+maxPinsCirc = floor(circumference / minPitch);
+c_pack = nPinsPerRow - maxPinsCirc;   % <= 0
+
+c_axPitch = (minAxialPitchFactor*pinDia) - rowSpacing;  % <= 0
+
+lastRowX = firstRowZ + (nRows - 1)*rowSpacing;
+c_axExtent = (lastRowX + firstRowZ) - L_casing;         % <= 0
+
+% -----------------------
+% Stress constraints
+% -----------------------
+A_bore           = pi * r_i^2;
+p_design_casing  = MEOP_psi * DF_casing;
+p_design_pin     = MEOP_psi * DF_pin;
+F_axial_casing   = p_design_casing * A_bore;  % lbf
+F_axial_pin      = p_design_pin    * A_bore;  % lbf
+
+pins_oneEnd      = nRows * nPinsPerRow;
+F_perPin_casing  = F_axial_casing / max(1, pins_oneEnd); % for bearing
+F_perPin_pin     = F_axial_pin    / max(1, pins_oneEnd); % for pin shear
+
+n = 1:nRows;
+
+A_ShearOut = sum((rowSpacing*(n-1) + firstRowZ) * t * 2 * nPinsPerRow);
+
+A_wall_gross    = (pi/4) * ((ID + 2*t)^2 - ID^2);
+A_holes_per_row = pinDia * nPinsPerRow * t;
+
+kInteract = 3.0;
+if rowSpacing <= kInteract * pinDia
+    N_eff = nRows;
+else
+    N_eff = 1;
+end
+A_tension = A_wall_gross - N_eff * A_holes_per_row;
+
+if ~isfinite(A_tension)  || A_tension  <= 0, A_tension  = 1e-6; end
+if ~isfinite(A_ShearOut) || A_ShearOut <= 0, A_ShearOut = 1e-6; end
+
+Stress_ShearOut = (F_axial_casing / A_ShearOut) / 1000;
+Net_Tension     = (F_axial_casing / A_tension)  / 1000;
+
+A_pin = (pi/4) * pinDia^2;
+if ~isfinite(A_pin) || A_pin <= 0, A_pin = 1e-6; end
+
+Pin_Shear = (F_perPin_pin / A_pin) / 1000;
+
+% Bearing should use casing DF:
+Bearing  = (F_perPin_casing / (pinDia * t)) / 1000;
+
+Hoop  = (p_design_casing * (((ID+2*t)^2 + ID^2) / ((ID+2*t)^2 - (ID)^2))) / 1000;
+Axial = Hoop/2;
+
+Pin_Shear_Strength = 43.5; % KSI
+if Pin_Shear <= 0
+    Pin_Shear_FOS = inf;
+else
+    Pin_Shear_FOS = (Pin_Shear_Strength/Pin_Shear) - 2;
+end
+
+c_shearOut = Stress_ShearOut - targets.shearOut_max;
+c_netTen   = Net_Tension     - targets.netTension_max;
+c_pinShear = Pin_Shear       - targets.pinShear_max;
+c_bearing  = Bearing         - targets.bearing_max;
+c_hoop     = Hoop            - targets.hoop_max;
+c_axial    = Axial           - targets.axial_max;
+
+c_fos = targets.pinShearFOS_min - Pin_Shear_FOS;
+
+c = [
+    c_pack
+    c_axPitch
+    c_axExtent
+    c_shearOut
+    c_netTen
+    c_pinShear
+    c_bearing
+    c_hoop
+    c_axial
+    c_fos
+];
+
+end
