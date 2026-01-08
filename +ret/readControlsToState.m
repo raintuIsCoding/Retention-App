@@ -35,7 +35,7 @@ end
 isFull = (get(S.btnLengthMode, 'Value') == 1);
 if isFull
     S.lengthMode = "full";
-    S.L_casing   = 96.0;
+    S.L_casing   = 24.0;
     S.mirrorPins = true;
     set(S.btnLengthMode, 'String', "Length: 96 in (both ends)");
 else
