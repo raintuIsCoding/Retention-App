@@ -104,9 +104,7 @@ mkLabelT('Shear Out (KSI)', yT);         S.edTgtShearOut = mkEditT(S.targets.she
 mkLabelT('Net Tension (KSI)', yT-dyT);   S.edTgtNetTens  = mkEditT(S.targets.netTension_max, yT-dyT, '%.4f');
 mkLabelT('Pin Shear (KSI)', yT-2*dyT);   S.edTgtPinShear = mkEditT(S.targets.pinShear_max, yT-2*dyT, '%.4f');
 mkLabelT('Bearing (KSI)', yT-3*dyT);     S.edTgtBearing  = mkEditT(S.targets.bearing_max, yT-3*dyT, '%.4f');
-mkLabelT('Hoop (KSI)', yT-4*dyT);        S.edTgtHoop     = mkEditT(S.targets.hoop_max, yT-4*dyT, '%.4f');
-mkLabelT('Axial (KSI)', yT-5*dyT);       S.edTgtAxial    = mkEditT(S.targets.axial_max, yT-5*dyT, '%.4f');
-mkLabelT('Pin Shear FOS Min', yT-6*dyT);       S.edTgtFOS      = mkEditT(S.targets.pinShearFOS_min, yT-6*dyT, '%.4f');
+mkLabelT('Pressure Vessel (KSI)', yT-4*dyT);        S.edTgtPressureVessel     = mkEditT(S.targets.pressure_vessel_max, yT-4*dyT, '%.4f');
 
 % ----- Optimization Bounds (purple) -----
 S.pOptBounds = uipanel(S.pOpt, ...

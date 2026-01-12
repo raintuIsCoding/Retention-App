@@ -44,18 +44,24 @@ pass = (bearing <= softLim); passAll = passAll && pass;
 setLine(4, fmtLine('Bearing', bearing, lim, pass, '<='), pass);
 
 % 5 Pressure Vessel (<=)
-lim = targets.pressure_vessel_max;
+lim = targets.pressureVessel_max;
 softLim = lim * (1 + marginFrac);
 pass = (pressureVessel <= softLim); passAll = passAll && pass;
-setLine(5, fmtLine('Pressure Vessel', pressureVessel, lim, pass, '<='), pass);
+setLine(5, fmtLine('Pressure Vessel', hoop, lim, pass, '<='), pass);
+
+% 6 Pin FOS (>=)
+lim = targets.pinShearFOS_min;
+softLim = lim * (1 - marginFrac);   % allow 10% under target and still show PASS
+pass = (FOS >= softLim); passAll = passAll && pass;
+setLine(6, fmtLine('Pin FOS', FOS, lim, pass, '>='), pass);
 
 % 7 Banner + panel background
 if passAll
     set(S.pOptResults, 'BackgroundColor', [0.90 1.00 0.90]);
-    setLine(6, '--- ALL CONSTRAINTS MET ---', true);
+    setLine(7, '--- ALL CONSTRAINTS MET ---', true);
 else
     set(S.pOptResults, 'BackgroundColor', [1.00 0.90 0.90]);
-    setLine(6, '--- CONSTRAINTS VIOLATED ---', false);
+    setLine(7, '--- CONSTRAINTS VIOLATED ---', false);
 end
 
     function setLine(i, str, isPass)

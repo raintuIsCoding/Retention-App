@@ -87,11 +87,20 @@ Bearing  = (F_perPin_casing / (pinDia * t)) / 1000;
 
 Pressure_Vessel  = (p_design_casing * (((ID+2*t)^2 + ID^2) / ((ID+2*t)^2 - (ID)^2))) / 1000;
 
+Pin_Shear_Strength = 43.5; % KSI
+if Pin_Shear <= 0
+    Pin_Shear_FOS = inf;
+else
+    Pin_Shear_FOS = (Pin_Shear_Strength/Pin_Shear) - 2;
+end
+
 c_shearOut = Stress_ShearOut - targets.shearOut_max;
 c_netTen   = Net_Tension     - targets.netTension_max;
 c_pinShear = Pin_Shear       - targets.pinShear_max;
 c_bearing  = Bearing         - targets.bearing_max;
-c_pressureVessel     = Pressure_Vessel            - targets.pressureVessel_max;
+c_pressure     = Hoop            - targets.hoop_max;
+
+c_fos = targets.pinShearFOS_min - Pin_Shear_FOS;
 
 c = [
     c_pack
@@ -101,7 +110,9 @@ c = [
     c_netTen
     c_pinShear
     c_bearing
-    c_pressureVessel
+    c_hoop
+    c_axial
+    c_fos
 ];
 
 end
