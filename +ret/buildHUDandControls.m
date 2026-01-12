@@ -8,7 +8,9 @@ fontsize2 = 9;
 fontsize3 = 8;
 fontsize4 = 8;
 
+%% =========================
 % Main container panel
+% =========================
 S.hud = uipanel(fig, ...
     'Units', 'normalized', ...
     'Position', [0.01 0.02 0.52 0.96], ...
@@ -16,7 +18,9 @@ S.hud = uipanel(fig, ...
     'BackgroundColor', [1 1 1], ...
     'ForegroundColor', [0 0 0]);
 
+%% =========================
 % Inputs panel
+% =========================
 S.pIn = uipanel(S.hud, ...
     'Units', 'normalized', ...
     'Position', [0.02 0.52 0.47 0.46], ...
@@ -24,7 +28,9 @@ S.pIn = uipanel(S.hud, ...
     'ForegroundColor', [0 0 0], ...
     'BackgroundColor', [1 1 1]);
 
+%% =========================
 % Outputs container
+% =========================
 S.pOut = uipanel(S.hud, ...
     'Units', 'normalized', ...
     'Position', [0.02 0.02 0.47 0.48], ...
@@ -70,7 +76,9 @@ S.txtStress = uicontrol(S.pOutStress, ...
     'FontName', 'Consolas', ...
     'FontSize', fontsize2);
 
+%% =========================
 % Optimization panel
+% =========================
 S.pOpt = uipanel(S.hud, ...
     'Units', 'normalized', ...
     'Position', [0.51 0.02 0.47 0.96], ...
@@ -78,64 +86,151 @@ S.pOpt = uipanel(S.hud, ...
     'ForegroundColor', [0 0 0.6], ...
     'BackgroundColor', [0.95 0.95 1]);
 
-% ----- Target Constraints (green) -----
-S.pOptTargets = uipanel(S.pOpt, ...
+%% =========================
+% Allowables (green)
+% =========================
+S.pOptAllow = uipanel(S.pOpt, ...
     'Units', 'normalized', ...
-    'Position', [0.02 0.66 0.96 0.32], ...   % slightly shorter
-    'Title', 'Target Constraints (MIII-CASINGx2DF & MIII-PINSx1.75DF)', ...
+    'Position', [0.02 0.64 0.96 0.34], ...
+    'Title', 'Allowables (KSI)', ...
     'ForegroundColor', [0 0.4 0], ...
     'BackgroundColor', [0.9 1 0.9]);
 
-yT = 0.86; dyT = 0.12;
-xLT = 0.02; wLT = 0.55;
-xCT = 0.58; wCT = 0.40;
-hT = 0.10;
+% Ensure structs exist
+if ~isfield(S,'allow') || ~isstruct(S.allow), S.allow = struct(); end
+if ~isfield(S.allow,'yield') || ~isstruct(S.allow.yield), S.allow.yield = struct(); end
+if ~isfield(S.allow,'ult')   || ~isstruct(S.allow.ult),   S.allow.ult   = struct(); end
 
-mkLabelT = @(txt, yy) uicontrol(S.pOptTargets, 'Style','text', 'Units','normalized', ...
-    'Position',[xLT yy wLT hT], 'String',txt, 'HorizontalAlignment','left', ...
-    'BackgroundColor',[0.9 1 0.9], 'ForegroundColor',[0 0 0], 'FontName','Consolas', 'FontSize', fontsize4);
+% ===== Defaults (match your margins sheet) =====
+S.allow.yield.shearOut       = localDefField(S.allow.yield, 'shearOut',       43.67);
+S.allow.ult.shearOut         = localDefField(S.allow.ult,   'shearOut',       43.67);
 
-mkEditT = @(val, yy, fmt) uicontrol(S.pOptTargets, 'Style','edit', 'Units','normalized', ...
-    'Position',[xCT yy wCT hT], 'String',num2str(val, fmt), ...
-    'BackgroundColor',[1 1 1], 'ForegroundColor',[0 0 0], 'FontSize', fontsize3, ...
-    'Callback',@ret.onConstraintChanged);
+S.allow.yield.netTension     = localDefField(S.allow.yield, 'netTension',     17.28);
+S.allow.ult.netTension       = localDefField(S.allow.ult,   'netTension',     17.28);
 
-mkLabelT('Shear Out (KSI)', yT);         S.edTgtShearOut = mkEditT(S.targets.shearOut_max, yT, '%.4f');
-mkLabelT('Net Tension (KSI)', yT-dyT);   S.edTgtNetTens  = mkEditT(S.targets.netTension_max, yT-dyT, '%.4f');
-mkLabelT('Pin Shear (KSI)', yT-2*dyT);   S.edTgtPinShear = mkEditT(S.targets.pinShear_max, yT-2*dyT, '%.4f');
-mkLabelT('Bearing (KSI)', yT-3*dyT);     S.edTgtBearing  = mkEditT(S.targets.bearing_max, yT-3*dyT, '%.4f');
-mkLabelT('Pressure Vessel (KSI)', yT-4*dyT);        S.edTgtPressureVessel     = mkEditT(S.targets.pressure_vessel_max, yT-4*dyT, '%.4f');
+S.allow.yield.pressureVessel = localDefField(S.allow.yield, 'pressureVessel', 68.40);
+S.allow.ult.pressureVessel   = localDefField(S.allow.ult,   'pressureVessel', 68.40);
 
-% ----- Optimization Bounds (purple) -----
+% Bearing unknown in the sheet -> blank default
+S.allow.yield.bearing        = localDefField(S.allow.yield, 'bearing', NaN);
+S.allow.ult.bearing          = localDefField(S.allow.ult,   'bearing', NaN);
+
+% Pins
+S.allow.yield.pinShear       = localDefField(S.allow.yield, 'pinShear', 58.00);
+S.allow.ult.pinShear         = localDefField(S.allow.ult,   'pinShear', 104.00);
+
+% Ret ring
+S.allow.yield.ret_shearOut   = localDefField(S.allow.yield, 'ret_shearOut',   20.00);
+S.allow.ult.ret_shearOut     = localDefField(S.allow.ult,   'ret_shearOut',   27.00);
+S.allow.yield.ret_netTension = localDefField(S.allow.yield, 'ret_netTension', 35.00);
+S.allow.ult.ret_netTension   = localDefField(S.allow.ult,   'ret_netTension', 42.00);
+S.allow.yield.ret_bearing    = localDefField(S.allow.yield, 'ret_bearing',    58.00);
+S.allow.ult.ret_bearing      = localDefField(S.allow.ult,   'ret_bearing',    88.00);
+
+% Column layout: Label | Yield | Ultimate
+xL  = 0.02; wL  = 0.52;
+xY  = 0.56; wY  = 0.19;
+xU  = 0.78; wU  = 0.19;
+
+hA  = 0.095;
+yA0 = 0.86;
+dyA = 0.105;
+
+uicontrol(S.pOptAllow,'Style','text','Units','normalized', ...
+    'Position',[xY yA0+dyA*0.32 wY hA*0.75],'String','Yield', ...
+    'HorizontalAlignment','center','BackgroundColor',[0.9 1 0.9], ...
+    'ForegroundColor',[0 0.4 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+
+uicontrol(S.pOptAllow,'Style','text','Units','normalized', ...
+    'Position',[xU yA0+dyA*0.32 wU hA*0.75],'String','Ultimate', ...
+    'HorizontalAlignment','center','BackgroundColor',[0.9 1 0.9], ...
+    'ForegroundColor',[0 0.4 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+
+mkLabelA = @(txt, yy) uicontrol(S.pOptAllow,'Style','text','Units','normalized', ...
+    'Position',[xL yy wL hA],'String',txt,'HorizontalAlignment','left', ...
+    'BackgroundColor',[0.9 1 0.9],'ForegroundColor',[0 0 0], ...
+    'FontName','Consolas','FontSize',fontsize4);
+
+mkEditA = @(val, yy, xpos, tag) uicontrol(S.pOptAllow,'Style','edit','Units','normalized', ...
+    'Position',[xpos yy wY hA], ...
+    'String', localNumStr(val,'%.4f'), ...
+    'Tag',tag, ...
+    'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontSize',fontsize3, ...
+    'Callback',@ret.onAllowablesChanged);
+
+% Rows
+yy = yA0;
+mkLabelA('Casing Shear-Out', yy);
+S.edAllowY_shearOut = mkEditA(S.allow.yield.shearOut, yy, xY, 'allow_y_shearOut');
+S.edAllowU_shearOut = mkEditA(S.allow.ult.shearOut,   yy, xU, 'allow_u_shearOut');
+
+yy = yy - dyA;
+mkLabelA('Casing Net Tension', yy);
+S.edAllowY_netT = mkEditA(S.allow.yield.netTension, yy, xY, 'allow_y_netTension');
+S.edAllowU_netT = mkEditA(S.allow.ult.netTension,   yy, xU, 'allow_u_netTension');
+
+yy = yy - dyA;
+mkLabelA('Casing Bearing', yy);
+S.edAllowY_bear = mkEditA(S.allow.yield.bearing, yy, xY, 'allow_y_bearing');
+S.edAllowU_bear = mkEditA(S.allow.ult.bearing,   yy, xU, 'allow_u_bearing');
+
+yy = yy - dyA;
+mkLabelA('Casing Pressure Vessel', yy);
+S.edAllowY_pv = mkEditA(S.allow.yield.pressureVessel, yy, xY, 'allow_y_pressureVessel');
+S.edAllowU_pv = mkEditA(S.allow.ult.pressureVessel,   yy, xU, 'allow_u_pressureVessel');
+
+yy = yy - dyA;
+mkLabelA('Pins Pin Shear', yy);
+S.edAllowY_ps = mkEditA(S.allow.yield.pinShear, yy, xY, 'allow_y_pinShear');
+S.edAllowU_ps = mkEditA(S.allow.ult.pinShear,   yy, xU, 'allow_u_pinShear');
+
+yy = yy - dyA;
+mkLabelA('Ret Ring Shear-Out', yy);
+S.edAllowY_retSO = mkEditA(S.allow.yield.ret_shearOut, yy, xY, 'allow_y_ret_shearOut');
+S.edAllowU_retSO = mkEditA(S.allow.ult.ret_shearOut,   yy, xU, 'allow_u_ret_shearOut');
+
+yy = yy - dyA;
+mkLabelA('Ret Ring Net Tension', yy);
+S.edAllowY_retNT = mkEditA(S.allow.yield.ret_netTension, yy, xY, 'allow_y_ret_netTension');
+S.edAllowU_retNT = mkEditA(S.allow.ult.ret_netTension,   yy, xU, 'allow_u_ret_netTension');
+
+yy = yy - dyA;
+mkLabelA('Ret Ring Bearing', yy);
+S.edAllowY_retB = mkEditA(S.allow.yield.ret_bearing, yy, xY, 'allow_y_ret_bearing');
+S.edAllowU_retB = mkEditA(S.allow.ult.ret_bearing,   yy, xU, 'allow_u_ret_bearing');
+
+%% =========================
+% Optimization Bounds (purple) - Min Pitch UI removed
+% =========================
 S.pOptBounds = uipanel(S.pOpt, ...
     'Units', 'normalized', ...
-    'Position', [0.02 0.34 0.96 0.30], ...   % slightly taller than before
+    'Position', [0.02 0.40 0.96 0.22], ...
     'Title', 'Optimization Bounds [min, max]', ...
     'ForegroundColor', [0.4 0 0.4], ...
     'BackgroundColor', [1 0.95 1]);
 
-yB  = 0.86;
-dyB = 0.12;
+yB  = 0.82;
+dyB = 0.16;
 xLB = 0.02; wLB = 0.38;
 xMinB = 0.42; wMinB = 0.27;
 xMaxB = 0.71; wMaxB = 0.27;
-hB  = 0.11;
+hB  = 0.14;
 
-mkLabelB = @(txt, yy) uicontrol(S.pOptBounds, 'Style','text', 'Units','normalized', ...
-    'Position',[xLB yy wLB hB], 'String',txt, 'HorizontalAlignment','left', ...
+mkLabelB = @(txt, yy2) uicontrol(S.pOptBounds, 'Style','text', 'Units','normalized', ...
+    'Position',[xLB yy2 wLB hB], 'String',txt, 'HorizontalAlignment','left', ...
     'BackgroundColor',[1 0.95 1], 'ForegroundColor',[0 0 0], 'FontName','Consolas', 'FontSize', fontsize4);
 
-mkEditB = @(val, yy, xpos) uicontrol(S.pOptBounds, 'Style','edit', 'Units','normalized', ...
-    'Position',[xpos yy wMinB hB], 'String',num2str(val, '%.3f'), ...
+mkEditB = @(val, yy2, xpos) uicontrol(S.pOptBounds, 'Style','edit', 'Units','normalized', ...
+    'Position',[xpos yy2 wMinB hB], 'String',num2str(val, '%.3f'), ...
     'BackgroundColor',[1 1 1], 'ForegroundColor',[0 0 0], 'FontSize', fontsize3, ...
     'Callback',@ret.onBoundsChanged);
 
 uicontrol(S.pOptBounds, 'Style','text', 'Units','normalized', ...
-    'Position',[xMinB yB+dyB*0.3 wMinB hB*0.7], 'String','Min', 'HorizontalAlignment','center', ...
+    'Position',[xMinB yB+dyB*0.28 wMinB hB*0.65], 'String','Min', 'HorizontalAlignment','center', ...
     'BackgroundColor',[1 0.95 1], 'ForegroundColor',[0.3 0 0.3], 'FontName','Consolas', 'FontSize', fontsize4, 'FontWeight','bold');
 
 uicontrol(S.pOptBounds, 'Style','text', 'Units','normalized', ...
-    'Position',[xMaxB yB+dyB*0.3 wMaxB hB*0.7], 'String','Max', 'HorizontalAlignment','center', ...
+    'Position',[xMaxB yB+dyB*0.28 wMaxB hB*0.65], 'String','Max', 'HorizontalAlignment','center', ...
     'BackgroundColor',[1 0.95 1], 'ForegroundColor',[0.3 0 0.3], 'FontName','Consolas', 'FontSize', fontsize4, 'FontWeight','bold');
 
 mkLabelB('Wall Thick (in)', yB);
@@ -162,38 +257,67 @@ mkLabelB('Pin Dia (in)', yB-5*dyB);
 S.edBndPinDiaMin = mkEditB(S.optBounds.pinDia(1), yB-5*dyB, xMinB);
 S.edBndPinDiaMax = mkEditB(S.optBounds.pinDia(2), yB-5*dyB, xMaxB);
 
-mkLabelB('Min Pitch (x dia)', yB-6*dyB);
-S.edMinCircPitch = uicontrol(S.pOptBounds, 'Style','edit', 'Units','normalized', ...
-    'Position',[xMinB yB-6*dyB wMinB+wMaxB+0.02 hB], 'String',num2str(S.minCircPitchFactor, '%.1f'), ...
-    'BackgroundColor',[1 1 1], 'ForegroundColor',[0 0 0], 'FontSize', fontsize3, ...
-    'Callback',@ret.onBoundsChanged);
-
-marginFrac = S.marginFrac;  % 5% buffer
-
-% ----- Constraint Status (results) -----
+%% =========================
+% Margin Status grid
+% =========================
 S.pOptResults = uipanel(S.pOpt, ...
     'Units', 'normalized', ...
-    'Position', [0.02 0.13 0.96 0.19], ...
-    'Title', sprintf('Constraint Status (%.0f%% buffer)', marginFrac*100), ...
+    'Position', [0.02 0.14 0.96 0.24], ...
+    'Title', 'Margin Status', ...
     'ForegroundColor', [0 0 0], ...
     'BackgroundColor', [1 1 1]);
 
-% One line per constraint + one banner line (no HTML)
-S.txtOptLines = gobjects(8,1);
-lineH = 0.115;
-topY  = 0.86;
+S.marginN = 8;
 
-for k = 1:8
-    yy = topY - (k-1)*lineH;
-    S.txtOptLines(k) = uicontrol(S.pOptResults, 'Style','text', 'Units','normalized', ...
-        'Position',[0.02 yy 0.96 lineH-0.01], 'String','', ...
-        'HorizontalAlignment','left', 'BackgroundColor',[1 1 1], ...
-        'ForegroundColor',[0 0 0], 'FontName','Consolas', 'FontSize', fontsize4);
+x1 = 0.02; w1 = 0.22;
+x2 = 0.25; w2 = 0.35;
+x3 = 0.61; w3 = 0.18;
+x4 = 0.80; w4 = 0.18;
+
+hR = 0.11;
+y0 = 0.86;
+
+uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+    'Position',[x1 y0 w1 hR],'String','Component', ...
+    'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
+    'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+    'Position',[x2 y0 w2 hR],'String','Load Case', ...
+    'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
+    'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+    'Position',[x3 y0 w3 hR],'String','Yield Margin', ...
+    'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
+    'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+    'Position',[x4 y0 w4 hR],'String','Ultimate Margin', ...
+    'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
+    'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+
+S.marginCells = gobjects(S.marginN,4);
+for r = 1:S.marginN
+    yy2 = y0 - r*hR;
+
+    S.marginCells(r,1) = uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+        'Position',[x1 yy2 w1 hR],'String','', 'HorizontalAlignment','left', ...
+        'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4);
+
+    S.marginCells(r,2) = uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+        'Position',[x2 yy2 w2 hR],'String','', 'HorizontalAlignment','left', ...
+        'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4);
+
+    S.marginCells(r,3) = uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+        'Position',[x3 yy2 w3 hR],'String','', 'HorizontalAlignment','left', ...
+        'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4);
+
+    S.marginCells(r,4) = uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
+        'Position',[x4 yy2 w4 hR],'String','', 'HorizontalAlignment','left', ...
+        'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4);
 end
 
-set(S.txtOptLines(1), 'String', 'Adjust constraints/bounds, then Run Optimization');
-
-% Button + status line
+%% =========================
+% Optimize button + status
+% =========================
 S.btnOptimize = uicontrol(S.pOpt, ...
     'Style', 'pushbutton', ...
     'Units', 'normalized', ...
@@ -217,35 +341,40 @@ S.txtOptStatus = uicontrol(S.pOpt, ...
     'FontName', 'Consolas', ...
     'FontSize', fontsize3);
 
-%% ---- Inputs panel controls ----
-yTop = 0.90; dy = 0.075;
-xL  = 0.04; wL = 0.52;
-xC  = 0.58; wC = 0.38;
-h   = 0.07;
+%% =========================
+% Inputs panel controls (same as your latest layout)
+% =========================
+yTop = 0.92;
+dy   = 0.062;
+xL2  = 0.04; wL2 = 0.52;
+xC2  = 0.58; wC2 = 0.38;
+h2   = 0.060;
 
-mkLabel = @(txt, yy) uicontrol(S.pIn, 'Style','text', 'Units','normalized', ...
-    'Position',[xL yy wL h], 'String',txt, 'HorizontalAlignment','left', ...
+mkLabel = @(txt, yy3) uicontrol(S.pIn, 'Style','text', 'Units','normalized', ...
+    'Position',[xL2 yy3 wL2 h2], 'String',txt, 'HorizontalAlignment','left', ...
     'BackgroundColor',[1 1 1], 'ForegroundColor',[0 0 0], 'FontName','Consolas', 'FontSize', fontsize2);
 
-mkEdit = @(val, yy, tag) uicontrol(S.pIn, 'Style','edit', 'Units','normalized', ...
-    'Position',[xC yy wC h], 'String',num2str(val), 'Tag',tag, ...
+mkEdit = @(val, yy3, tag) uicontrol(S.pIn, 'Style','edit', 'Units','normalized', ...
+    'Position',[xC2 yy3 wC2 h2], 'String',num2str(val), 'Tag',tag, ...
     'BackgroundColor',[1 1 1], 'ForegroundColor',[0 0 0], ...
     'Callback',@ret.onAnyInputChanged);
 
-mkLabel('Inner Diameter (in)', yTop);                  S.edID      = mkEdit(S.ID,         yTop,        'ID');
+mainYellow = [1 1 0.6];
 
-mainYellow = [1 1 0.6];  % highlight for primary design inputs
+mkLabel('Inner Diameter (in)', yTop);
+S.edID = mkEdit(S.ID, yTop, 'ID');
 
-mkLabel('Wall Thickness (in)', yTop-dy);               S.edT       = mkEdit(S.t,          yTop-dy,     't');
+mkLabel('Wall Thickness (in)', yTop-dy);
+S.edT = mkEdit(S.t, yTop-dy, 't');
 set(S.edT, 'BackgroundColor', mainYellow);
 
-mkLabel('Modeled Length', yTop-2*dy);
-isFull = (isfield(S,'lengthMode') && S.lengthMode == "full");
-lenStr = "Length: 10 in (aft only)";
-if isFull, lenStr = "Length: 96 in (both ends)"; end
+mkLabel('View Toggle', yTop-2*dy);
+isFull = isfield(S,'lengthMode') && (S.lengthMode == "full");
+btnStr = 'Retention Detail View';
+if isFull, btnStr = 'Full Casing'; end
 S.btnLengthMode = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
-    'Position',[xC (yTop-2*dy) wC h], ...
-    'String', lenStr, ...
+    'Position',[xC2 (yTop-2*dy) wC2 h2], ...
+    'String', btnStr, ...
     'Value', double(isFull), ...
     'BackgroundColor',[0.95 0.95 0.95], ...
     'ForegroundColor',[0 0 0], ...
@@ -253,52 +382,100 @@ S.btnLengthMode = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized',
     'FontSize', fontsize2, ...
     'Callback',@ret.onAnyInputChanged);
 
-mkLabel('MEOP (psi)', yTop-3*dy);                      S.edMEOP       = mkEdit(S.MEOP_psi,   yTop-3*dy,   'MEOP_psi');
-mkLabel('Casing Design Factor (xMEOP)', yTop-4*dy);    S.edDFcasing   = mkEdit(S.DF_casing,  yTop-4*dy,   'DF_casing');
-mkLabel('Pin Design Factor (xMEOP)', yTop-5*dy);       S.edDFpin      = mkEdit(S.DF_pin,     yTop-5*dy,   'DF_pin');
+mkLabel('MEOP (psi)', yTop-3*dy);
+S.edMEOP = mkEdit(S.MEOP_psi, yTop-3*dy, 'MEOP_psi');
 
-mkLabel('Axial Rows', yTop-6*dy);                      S.edRows       = mkEdit(S.nRows,      yTop-6*dy,   'nRows');
+% Ensure FOS defaults exist (from margins sheet)
+if ~isfield(S,'FOS') || ~isstruct(S.FOS), S.FOS = struct(); end
+if ~isfield(S.FOS,'casing_y') || ~isfinite(S.FOS.casing_y), S.FOS.casing_y = 2.00; end
+if ~isfield(S.FOS,'casing_u') || ~isfinite(S.FOS.casing_u), S.FOS.casing_u = 2.00; end
+if ~isfield(S.FOS,'pin_y')    || ~isfinite(S.FOS.pin_y),    S.FOS.pin_y    = 1.75; end
+if ~isfield(S.FOS,'pin_u')    || ~isfinite(S.FOS.pin_u),    S.FOS.pin_u    = 2.00; end
+if ~isfield(S.FOS,'ret_y')    || ~isfinite(S.FOS.ret_y),    S.FOS.ret_y    = 1.75; end
+if ~isfield(S.FOS,'ret_u')    || ~isfinite(S.FOS.ret_u),    S.FOS.ret_u    = 2.00; end
+
+mkLabel('Casing FOS (Yield)', yTop-4*dy);
+S.edFOS_cy = mkEdit(S.FOS.casing_y, yTop-4*dy, 'FOS.casing_y');
+
+mkLabel('Casing FOS (Ultimate)', yTop-5*dy);
+S.edFOS_cu = mkEdit(S.FOS.casing_u, yTop-5*dy, 'FOS.casing_u');
+
+mkLabel('Pin FOS (Yield)', yTop-6*dy);
+S.edFOS_py = mkEdit(S.FOS.pin_y, yTop-6*dy, 'FOS.pin_y');
+
+mkLabel('Pin FOS (Ultimate)', yTop-7*dy);
+S.edFOS_pu = mkEdit(S.FOS.pin_u, yTop-7*dy, 'FOS.pin_u');
+
+mkLabel('Ret Ring FOS (Yield)', yTop-8*dy);
+S.edFOS_ry = mkEdit(S.FOS.ret_y, yTop-8*dy, 'FOS.ret_y');
+
+mkLabel('Ret Ring FOS (Ultimate)', yTop-9*dy);
+S.edFOS_ru = mkEdit(S.FOS.ret_u, yTop-9*dy, 'FOS.ret_u');
+
+mkLabel('Axial Rows', yTop-10*dy);
+S.edRows = mkEdit(S.nRows, yTop-10*dy, 'nRows');
 set(S.edRows, 'BackgroundColor', mainYellow);
 
-mkLabel('Pins per Row', yTop-7*dy);                    S.edPPR        = mkEdit(S.nPinsPerRow,yTop-7*dy,  'nPinsPerRow');
+mkLabel('Pins per Row', yTop-11*dy);
+S.edPPR = mkEdit(S.nPinsPerRow, yTop-11*dy, 'nPinsPerRow');
 set(S.edPPR, 'BackgroundColor', mainYellow);
 
-mkLabel('Row Spacing (in)', yTop-8*dy);                S.edRowSp      = mkEdit(S.rowSpacing, yTop-8*dy,  'rowSpacing');
+mkLabel('Row Spacing (in)', yTop-12*dy);
+S.edRowSp = mkEdit(S.rowSpacing, yTop-12*dy, 'rowSpacing');
 set(S.edRowSp, 'BackgroundColor', mainYellow);
 
-mkLabel('First Row Offset (in)', yTop-9*dy);           S.edFirst      = mkEdit(S.firstRowZ,  yTop-9*dy,  'firstRowZ');
+mkLabel('First Row Offset (in)', yTop-13*dy);
+S.edFirst = mkEdit(S.firstRowZ, yTop-13*dy, 'firstRowZ');
 set(S.edFirst, 'BackgroundColor', mainYellow);
 
-mkLabel('Pin Diameter (in)', yTop-10*dy);
-
+mkLabel('Pin Diameter (in)', yTop-14*dy);
 pinStrs = compose('%.4f', S.allowedPinDias);
-[~, idx] = min(abs(S.allowedPinDias - S.pinDia)); % nearest match
+[~, idx] = min(abs(S.allowedPinDias - S.pinDia));
 
 S.ddPinDia = uicontrol(S.pIn, ...
     'Style','popupmenu', ...
     'Units','normalized', ...
-    'Position',[xC (yTop-10*dy) wC h], ...
+    'Position',[xC2 (yTop-14*dy) wC2 h2], ...
     'String', pinStrs, ...
     'Value', idx, ...
     'BackgroundColor', mainYellow, ...
     'FontName','Consolas', ...
-    'FontSize',8, ...
+    'FontSize', 8, ...
     'Callback',@ret.onAnyInputChanged);
+set(S.ddPinDia, 'ForegroundColor', [0 0 0]);
 
-set(S.ddPinDia,'ForegroundColor',[0 0 0]);
-
-mkLabel('Pin Pattern*', yTop-11*dy);
+mkLabel('Pin Pattern*', yTop-15*dy);
 isAlt = (S.pinPatternMode == "alternating");
-btnStr = "Pattern: Progressive";
-if isAlt, btnStr = "Pattern: Alternating"; end
+btnStr2 = "Pattern: Progressive";
+if isAlt, btnStr2 = "Pattern: Alternating"; end
+
 S.btnPattern = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
-    'Position',[xC (yTop-11*dy) wC h], ...
-    'String', btnStr, ...
+    'Position',[xC2 (yTop-15*dy) wC2 h2], ...
+    'String', btnStr2, ...
     'Value', isAlt, ...
     'BackgroundColor', [1 1 1], ...
     'ForegroundColor',[0 0 0], ...
     'FontName','Consolas', ...
     'FontSize', fontsize3, ...
     'Callback',@ret.onAnyInputChanged);
+
+%% =========================
+% Local helpers
+% =========================
+    function s = localNumStr(v, fmt)
+        if ~isfinite(v)
+            s = '';
+        else
+            s = num2str(v, fmt);
+        end
+    end
+
+    function v = localDefField(st, field, defaultVal)
+        if isfield(st, field) && isfinite(st.(field))
+            v = st.(field);
+        else
+            v = defaultVal;
+        end
+    end
 
 end

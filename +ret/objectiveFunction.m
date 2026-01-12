@@ -1,6 +1,6 @@
 function obj = objectiveFunction(x, ID, casingLength, density_CF, density_Al, density_pin, retRingThk, allowedPinDias)
 % ret.objectiveFunction
-% Objective: minimize total mass of full hardware (both ends), consistent with updateAll.
+% Objective: minimize total mass of full hardware, consistent with updateAll.
 %
 % x = [t, nRows, nPinsPerRow, rowSpacing, firstRowZ, pinDia]
 % ID          = casing inner diameter (in)

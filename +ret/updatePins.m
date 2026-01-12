@@ -40,7 +40,8 @@ for iRow = 1:S.nRows
     % - optionally include forward end (L - xRow)
     xPositions = xRow;
     if isfield(S,'mirrorPins') && S.mirrorPins
-        xPositions = [xPositions, (S.L_casing - xRow)];
+        % Mirror across the true physical casing length (NOT the view length)
+        xPositions = [xPositions, (S.L_phys - xRow)];
     end
 
     for e = 1:numel(xPositions)

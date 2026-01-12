@@ -6,6 +6,14 @@ function S = updateAll(S)
 r_i = S.ID/2;
 r_o = r_i + S.t;
 
+% =========================
+% Snap pin diameter early (if you use discrete sizes)
+% =========================
+if isfield(S,'allowedPinDias') && ~isempty(S.allowedPinDias) && isfinite(S.pinDia)
+    [~,i] = min(abs(S.allowedPinDias - S.pinDia));
+    S.pinDia = S.allowedPinDias(i);
+end
+
 % -----------------------
 % Pin counts (define once)
 % -----------------------
@@ -13,30 +21,27 @@ totalPins_oneEnd = S.nRows * S.nPinsPerRow;   % pins engaged at ONE end (for axi
 totalPins_total  = totalPins_oneEnd * 2;      % full hardware mass assumes BOTH ends
 
 % =========================
-% Retention ring length logic
+% Retention ring length logic (per end)
 % =========================
-% Row-driven required ring length per end (this SHOULD grow with nRows)
+% Driven by: edge offset (firstRowZ), row spacing, number of rows
 retLen_rows = 2*S.firstRowZ + (S.nRows - 1)*S.rowSpacing;
 
-% Optional: user-controlled minimum retention ring length (per end)
-if ~isfield(S,'retRingLength') || ~isfinite(S.retRingLength) || S.retRingLength < 0
-    S.retRingLength = 1.0;     % default minimum per end
+% Optional minimum (keeps it from going absurdly small)
+if ~isfield(S,'retRingLengthMin') || ~isfinite(S.retRingLengthMin) || S.retRingLengthMin < 0
+    S.retRingLengthMin = 1.0; % in, per end
 end
-retLen_manual = S.retRingLength;
 
-% Actual ring length used everywhere (never shorter than what rows require)
-retLen_end = max(retLen_manual, retLen_rows);
+S.retLen_end = max(S.retRingLengthMin, retLen_rows);
 
 % =========================
-% Casing length logic (render + mass)
+% Physical casing length logic (true length)
 % =========================
 if ~isfield(S,'casingBaseLength') || ~isfinite(S.casingBaseLength) || S.casingBaseLength <= 0
-    S.casingBaseLength = 90;   % fixed minimum tube length
+    S.casingBaseLength = 90.0; % fixed minimum tube length
 end
-L_base = S.casingBaseLength;
 
-S.casingLength_eff = L_base + 2*retLen_end;
-S.L_casing = S.casingLength_eff;   % renderer uses this
+S.L_phys = S.casingBaseLength + 2*S.retLen_end;
+S.casingLength_eff = S.L_phys; % mass uses physical length
 
 % =========================
 % Packing check
@@ -48,10 +53,16 @@ maxPinsCirc = floor(circumference / minPitch);
 packingOK = (S.nPinsPerRow <= maxPinsCirc);
 
 % =========================
-% Axial geometry check (now uses correct length)
+% Axial geometry check (must use PHYSICAL length)
 % =========================
 lastRowX = S.firstRowZ + (S.nRows - 1)*S.rowSpacing;
-axialOK = (lastRowX + S.firstRowZ <= S.L_casing);
+axialOK = (lastRowX + S.firstRowZ <= S.L_phys);
+
+% =========================
+% Apply render mode (full vs config) + force visual refresh
+% (This sets S.L_casing for drawing only)
+% =========================
+S = ret.updateView(S, r_o);
 
 % =========================
 % Update casing + pins (rendering)
@@ -78,6 +89,9 @@ Volume_casing  = A_annulus * S.casingLength_eff;
 % Subtract pin-hole volume in the casing wall (simple cylindrical hole model)
 Volume_holes_casing = totalPins_total * pi * (S.pinDia/2)^2 * S.t;
 Volume_casing_net   = Volume_casing - Volume_holes_casing;
+if ~isfinite(Volume_casing_net) || Volume_casing_net < 0
+    Volume_casing_net = max(0, Volume_casing); % safety clamp
+end
 
 Mass_casing = Volume_casing_net * S.density_CF;
 
@@ -86,11 +100,15 @@ Mass_casing = Volume_casing_net * S.density_CF;
 % -----------------------
 A_ring = (pi/4) * (S.ID^2 - (S.ID - 2*retRingThk)^2);
 
-Volume_ring_oneEnd      = A_ring * retLen_end;
+Volume_ring_oneEnd      = A_ring * S.retLen_end;
 Volume_pinHoles_oneEnd  = totalPins_oneEnd * pi * (S.pinDia/2)^2 * retRingThk;
 
-Mass_retention_rings = (Volume_ring_oneEnd - Volume_pinHoles_oneEnd) ...
-                        * S.density_Al * nEnds_mass;
+Volume_ring_net_oneEnd  = Volume_ring_oneEnd - Volume_pinHoles_oneEnd;
+if ~isfinite(Volume_ring_net_oneEnd) || Volume_ring_net_oneEnd < 0
+    Volume_ring_net_oneEnd = max(0, Volume_ring_oneEnd);
+end
+
+Mass_retention_rings = Volume_ring_net_oneEnd * S.density_Al * nEnds_mass;
 
 % -----------------------
 % 3) Pin mass (steel)
@@ -110,28 +128,23 @@ Total_Mass = Mass_casing + Mass_retention_rings + Mass_pins;
 geomOutText = sprintf([ ...
     'Total Pins (one end): %d\n' ...
     'Total Pins (both ends): %d\n' ...
-    'Last Row X: %.2f in\n' ...
-    'Ret Ring Len (rows req, per end): %.2f in\n' ...
-    'Ret Ring Len (manual min, per end): %.2f in\n' ...
-    'Ret Ring Len (USED, per end): %.2f in\n' ...
+    'Ret Ring Length: %.2f in\n' ...
     'Base Casing Length: %.2f in\n' ...
-    'Total Casing Length: %.2f in\n' ...
-    'Max Pins/Row: %d\n' ...
-    'Packing OK: %s\n' ...
-    'Axial OK: %s\n' ...
+    'Full Casing Length: %.2f in\n' ...
     '-------------------\n' ...
     'Casing Mass: %.2f lb\n' ...
     'Retention Mass: %.2f lb\n' ...
     'Pin Mass: %.2f lb\n' ...
     '\n' ...
     'TOTAL MASS: %.2f lb\n' ], ...
-    totalPins_oneEnd, totalPins_total, lastRowX, ...
-    retLen_rows, retLen_manual, retLen_end, ...
-    L_base, S.casingLength_eff, maxPinsCirc, ...
-    ret.tfStr(packingOK), ret.tfStr(axialOK), ...
+    totalPins_oneEnd, totalPins_total, ...
+    S.retLen_end, ...
+    S.casingBaseLength, S.L_phys, ...
     Mass_casing, Mass_retention_rings, Mass_pins, Total_Mass);
 
-set(S.txtGeom, 'String', geomOutText);
+if isfield(S,'txtGeom') && isgraphics(S.txtGeom)
+    set(S.txtGeom, 'String', geomOutText);
+end
 
 %% ===== STRESS CALCS =====
 n = 1:S.nRows;
@@ -139,16 +152,19 @@ n = 1:S.nRows;
 % -------- Areas --------
 A_bore = pi * (S.ID/2)^2;  % in^2
 
-% Shear-out area
+% Shear-out area (your existing style; kept)
 A_ShearOut = sum((S.rowSpacing*(n-1) + S.firstRowZ) * S.t * 2 * S.nPinsPerRow);
 
 % Net tension area
 A_wall_gross    = (pi/4) * ((S.ID + 2*S.t)^2 - S.ID^2);
 A_holes_per_row = S.pinDia * S.nPinsPerRow * S.t;
 
-% Hole interaction model
-kInteract = 0;
-if S.rowSpacing <= kInteract * S.pinDia
+% Hole interaction model (make kInteract a tunable state var)
+if ~isfield(S,'kInteract') || ~isfinite(S.kInteract) || S.kInteract < 0
+    S.kInteract = 1.0; % default: interaction if spacing <= 1*D
+end
+
+if S.rowSpacing <= S.kInteract * S.pinDia
     N_eff = S.nRows;
 else
     N_eff = 1;
@@ -177,15 +193,11 @@ A_pin = (pi/4) * S.pinDia^2;
 if ~isfinite(A_pin) || A_pin <= 0, A_pin = 1e-6; end
 
 Pin_Shear = (F_perPin_pin / A_pin) / 1000;
-Bearing  = (F_perPin_casing / (S.pinDia * S.t)) / 1000;
+Bearing   = (F_perPin_casing / (S.pinDia * S.t)) / 1000;
 
 % Thick-wall pressure vessel hoop at inner surface (KSI)
-Pressure_Vessel  = (p_design_casing * (((S.ID+2*S.t)^2 + S.ID^2) / ((S.ID+2*S.t)^2 - (S.ID)^2))) / 1000;
-
-if isfield(S,'allowedPinDias')
-    [~,i] = min(abs(S.allowedPinDias - S.pinDia));
-    S.pinDia = S.allowedPinDias(i);
-end
+OD = S.ID + 2*S.t;
+Pressure_Vessel  = (p_design_casing * ((OD^2 + S.ID^2) / (OD^2 - S.ID^2))) / 1000;
 
 stressOutText = sprintf([ ...
     'Design Pressure (Casing): %.1f psi\n' ...
@@ -194,6 +206,7 @@ stressOutText = sprintf([ ...
     'Axial End Force (Pins):   %.0f lbf\n' ...
     'Avg Force per Pin (Casing DF): %.1f lbf\n' ...
     'Avg Force per Pin (Pin DF):    %.1f lbf\n' ...
+    '\n' ...
     'Shear Out Stress: %.4f KSI\n' ...
     'Net Tension: %.4f KSI\n' ...
     'Pin Shear: %.4f KSI\n' ...
@@ -203,9 +216,122 @@ stressOutText = sprintf([ ...
     F_perPin_casing, F_perPin_pin, ...
     Stress_ShearOut, Net_Tension, Pin_Shear, Bearing, Pressure_Vessel);
 
-set(S.txtStress, 'String', stressOutText);
+if isfield(S,'txtStress') && isgraphics(S.txtStress)
+    set(S.txtStress, 'String', stressOutText);
+end
+
+% ===== MARGIN STATUS (MEOP load, DF as FOS) =====
+p_meop = S.MEOP_psi;             % psi
+F_axial_meop = p_meop * A_bore;  % lbf
+
+F_perPin_meop = F_axial_meop / max(1, totalPins_oneEnd);
+
+% Loads at MEOP (KSI)
+Load_ShearOut_MEOP = (F_axial_meop / A_ShearOut) / 1000;
+Load_NetTens_MEOP  = (F_axial_meop / A_tension)  / 1000;
+Load_Bearing_MEOP  = (F_perPin_meop / (S.pinDia * S.t)) / 1000;
+
+A_pin = (pi/4)*S.pinDia^2;
+Load_PinShear_MEOP = (F_perPin_meop / max(1e-6, A_pin)) / 1000;
+
+OD = S.ID + 2*S.t;
+Load_PV_MEOP = (p_meop * ((OD^2 + S.ID^2) / (OD^2 - S.ID^2))) / 1000;
+
+cases = struct([]);
+
+cases(1).name  = 'Shear Out';
+cases(1).load  = Load_ShearOut_MEOP;
+cases(1).allow = S.targets.shearOut_max;
+cases(1).fos   = S.DF_casing;
+
+cases(2).name  = 'Net Tension';
+cases(2).load  = Load_NetTens_MEOP;
+cases(2).allow = S.targets.netTension_max;
+cases(2).fos   = S.DF_casing;
+
+cases(3).name  = 'Pin Shear';
+cases(3).load  = Load_PinShear_MEOP;
+cases(3).allow = S.targets.pinShear_max;
+cases(3).fos   = S.DF_pin;
+
+cases(4).name  = 'Bearing';
+cases(4).load  = Load_Bearing_MEOP;
+cases(4).allow = S.targets.bearing_max;
+cases(4).fos   = S.DF_casing;
+
+cases(5).name  = 'P Vessel';
+cases(5).load  = Load_PV_MEOP;
+cases(5).allow = S.targets.pressure_vessel_max;
+cases(5).fos   = S.DF_casing;
+
+S = ret.updateMarginStatus(S, cases);
 
 S = ret.updateConstraintStatus(S, Stress_ShearOut, Net_Tension, Pin_Shear, Bearing, Pressure_Vessel);
+
+% ===== Margin Table (Yield + Ultimate) =====
+% Load values should be at MEOP (NOT multiplied by DF/FOS)
+p_meop = S.MEOP_psi;
+F_axial_meop = p_meop * A_bore;
+F_perPin_meop = F_axial_meop / max(1, totalPins_oneEnd);
+
+Load_ShearOut = (F_axial_meop / A_ShearOut) / 1000;
+Load_NetTens  = (F_axial_meop / A_tension)  / 1000;
+Load_Bearing  = (F_perPin_meop / (S.pinDia * S.t)) / 1000;
+
+A_pin = (pi/4)*S.pinDia^2;
+Load_PinShear = (F_perPin_meop / max(1e-6, A_pin)) / 1000;
+
+OD = S.ID + 2*S.t;
+Load_PV = (p_meop * ((OD^2 + S.ID^2) / (OD^2 - S.ID^2))) / 1000;
+
+marg = @(allow, load, fos) (allow./(load.*fos)) - 1;
+
+rows = struct([]);
+
+% ---- CASING ----
+rows(1).component = "Casing";
+rows(1).caseName  = "(Casing) Shear-Out";
+rows(1).marginY   = marg(S.allow.yield.shearOut, Load_ShearOut, S.FOS.casing_y);
+rows(1).marginU   = marg(S.allow.ult.shearOut,   Load_ShearOut, S.FOS.casing_u);
+
+rows(2).component = "Casing";
+rows(2).caseName  = "(Casing) Net Tension";
+rows(2).marginY   = marg(S.allow.yield.netTension, Load_NetTens, S.FOS.casing_y);
+rows(2).marginU   = marg(S.allow.ult.netTension,   Load_NetTens, S.FOS.casing_u);
+
+rows(3).component = "Casing";
+rows(3).caseName  = "(Casing) Bearing";
+rows(3).marginY   = marg(S.allow.yield.bearing, Load_Bearing, S.FOS.casing_y);
+rows(3).marginU   = marg(S.allow.ult.bearing,   Load_Bearing, S.FOS.casing_u);
+
+rows(4).component = "Casing";
+rows(4).caseName  = "(Casing) Pressure Vessel";
+rows(4).marginY   = marg(S.allow.yield.pressureVessel, Load_PV, S.FOS.casing_y);
+rows(4).marginU   = marg(S.allow.ult.pressureVessel,   Load_PV, S.FOS.casing_u);
+
+% ---- PINS ----
+rows(5).component = "Pins";
+rows(5).caseName  = "(Pins) Pin Shear";
+rows(5).marginY   = marg(S.allow.yield.pinShear, Load_PinShear, S.FOS.pin_y);
+rows(5).marginU   = marg(S.allow.ult.pinShear,   Load_PinShear, S.FOS.pin_u);
+
+% ---- RET RING ---- (defaults to N/A if allowables are NaN)
+rows(6).component = "Ret Ring";
+rows(6).caseName  = "(Ret Ring) Shear-Out";
+rows(6).marginY   = marg(S.allow.yield.ret_shearOut, Load_ShearOut, S.FOS.ret_y);
+rows(6).marginU   = marg(S.allow.ult.ret_shearOut,   Load_ShearOut, S.FOS.ret_u);
+
+rows(7).component = "Ret Ring";
+rows(7).caseName  = "(Ret Ring) Net Tension";
+rows(7).marginY   = marg(S.allow.yield.ret_netTension, Load_NetTens, S.FOS.ret_y);
+rows(7).marginU   = marg(S.allow.ult.ret_netTension,   Load_NetTens, S.FOS.ret_u);
+
+rows(8).component = "Ret Ring";
+rows(8).caseName  = "(Ret Ring) Bearing";
+rows(8).marginY   = marg(S.allow.yield.ret_bearing, Load_Bearing, S.FOS.ret_y);
+rows(8).marginU   = marg(S.allow.ult.ret_bearing,   Load_Bearing, S.FOS.ret_u);
+
+S = ret.updateMarginTable(S, rows);
 
 drawnow limitrate;
 

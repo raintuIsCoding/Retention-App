@@ -17,12 +17,14 @@ S.pinDia      = 0.25;    % pin diameter (in)
 S.retRingThk  = 0.25;     % retention ring thickness (in)
 S.pinLen      = S.t + S.retRingThk;  % derived pin engagement length (in)
 
+S.casingBaseLength   = 90.0; % fixed minimum physical casing length
+S.retRingLengthMin   = 1.0;  % minimum retention length per end
+S.configViewLength   = 10.0; % rendered length in config view
+
 % Loads inputs
 S.MEOP_psi   = 650;   % psi
 S.DF_casing = 2;
 S.DF_pin    = 1.75;
-
-S.DF_casing_from_CLT = 1; % 3.4;
 
 S.theta_scale     = deg2rad(50);
 S.theta_ref = atan(sqrt(2));    % 54.7356 deg
@@ -41,7 +43,7 @@ S.targets.bearing_max     = 15.7;    % KSI
 S.targets.pressure_vessel_max  = 68.4; % KSI
 
 %% ---------- CASING PARAMETERS ----------
-S.casingLength = 91;              % Total casing length (in) - for weight calc
+S.casingLength = 90;              % Total casing length (in) - for weight calc
 S.density_CF = 0.0535;            % Carbon fiber density (lb/in^3)
 S.density_Al = 0.0975;            % 6061 Aluminum density (lb/in^3)
 S.density_pin = 0.289;            % lb/in^3 for 316 SS (typical)
@@ -63,5 +65,9 @@ S.optBounds.pinDia      = [0.25, 0.5];
 S.nCirc    = 150;  % casing mesh resolution
 S.nPinCirc = 30;   % pin mesh resolution
 S.maxPins  = 400;  % pool size
+
+if ~isfield(S,'minCircPitchFactor') || ~isfinite(S.minCircPitchFactor) || S.minCircPitchFactor <= 0
+    S.minCircPitchFactor = 3.0;
+end
 
 end
