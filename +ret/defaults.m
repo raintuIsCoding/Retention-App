@@ -4,16 +4,20 @@ function S = defaults()
 %% ---------- DEFAULT INPUTS ----------
 S.MIII = (8/6);
 S.marginFrac = 0.01;
-S.ID          = 6.0;      % inner diameter of casing (in)
-S.t           = 0.225;     % wall thickness (in)
+
+% Main geometry defaults (updated)
+S.ID          = 8.0;      % inner diameter of casing (in)
+S.t           = 0.25;     % wall thickness (in)
 S.L_casing    = 10.0;     % length of modeled region (in)
-S.lengthMode  = "aftOnly"; % "aftOnly" (10 in) or "full" (96 in)
-S.mirrorPins  = false;     % when true, mirror pins to forward end for display
+S.lengthMode  = "aftOnly"; % "aftOnly" (config view) or "full" (full casing)
+S.mirrorPins  = false;     % when true, mirror pins/ret rings to forward end for display
+
 S.nRows       = 3;        % axial rows of pins
 S.nPinsPerRow = 10;       % pins around circumference per row
-S.rowSpacing  = 0.5;      % axial spacing between rows (in)
-S.firstRowZ   = 0.875;     % axial position of first row from x=0 (in)
-S.pinDia      = 0.25;    % pin diameter (in)
+S.rowSpacing  = 0.75;     % axial spacing between rows (in)
+S.firstRowZ   = 1.0;      % axial position of first row from x=0 (in)
+S.pinDia      = 0.375;    % pin diameter (in)
+
 S.retRingThk  = 0.25;     % retention ring thickness (in)
 S.pinLen      = S.t + S.retRingThk;  % derived pin engagement length (in)
 
@@ -30,17 +34,42 @@ S.theta_scale     = deg2rad(50);
 S.theta_ref = atan(sqrt(2));    % 54.7356 deg
 
 % Pattern toggle
-S.pinPatternMode = "progressive";   % "progressive" or "alternating"
-S.altStartPhase  = 0;               % 0 or 1
+S.pinPatternMode = "spiral";   % "spiral" or "alternating"
+S.altStartPhase  = 0;           % 0 or 1
 
 S.allowedPinDias = [0.25, 0.3125, 0.375, 0.5];  % in
 
-%% ---------- TARGET STRESS LIMITS ---------- (All set by MIII max pressure motor pressure)
-S.targets.shearOut_max    = 43.67;    % KSI
-S.targets.netTension_max  = 17.28;    % KSI
-S.targets.pinShear_max    = 58;          % KSI
-S.targets.bearing_max     = 15.7;    % KSI
-S.targets.pressure_vessel_max  = 68.4; % KSI
+% Ret ring visibility (default on)
+S.showRetRings = true;
+
+%% ---------- DEFAULT ALLOWABLES (KSI) ----------
+% Casing (single input; applied to yield + ultimate internally)
+S.allow = struct();
+S.allow.yield = struct();
+S.allow.ult   = struct();
+
+S.allow.yield.shearOut       = 41.18;
+S.allow.yield.netTension     = 13.9;
+S.allow.yield.bearing        = 31.4;
+S.allow.yield.pressureVessel = 41.11;
+
+% Mirror casing allowables to ultimate by default (single-box UI behavior)
+S.allow.ult.shearOut         = S.allow.yield.shearOut;
+S.allow.ult.netTension       = S.allow.yield.netTension;
+S.allow.ult.bearing          = S.allow.yield.bearing;
+S.allow.ult.pressureVessel   = S.allow.yield.pressureVessel;
+
+% Pins
+S.allow.yield.pinShear       = 58.0;
+S.allow.ult.pinShear         = 104.0;
+
+% Ret ring
+S.allow.yield.ret_shearOut   = 20.0;
+S.allow.ult.ret_shearOut     = 27.0;
+S.allow.yield.ret_netTension = 35.0;
+S.allow.ult.ret_netTension   = 42.0;
+S.allow.yield.ret_bearing    = 58.0;
+S.allow.ult.ret_bearing      = 88.0;
 
 %% ---------- CASING PARAMETERS ----------
 S.casingLength = 90;              % Total casing length (in) - for weight calc

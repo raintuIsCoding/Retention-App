@@ -40,6 +40,22 @@ for k = 1:S.maxPins
         [0.8 0.2 0.2], 'EdgeColor','none', 'Visible','off');
 end
 
+%% ---------- RETENTION RING GRAPHICS (2 ends) ----------
+% Rendered as a simple thin-walled aluminum sleeve that slides into the casing ID.
+% Geometry is set in ret.updateRetRings() (OD = casing ID; length = S.retLen_end).
+x2 = [0, 1];
+[Theta2, X2] = meshgrid(theta, x2); %#ok<ASGLU>
+
+S.hRetRingOuter = gobjects(2,1);
+S.hRetRingInner = gobjects(2,1);
+S.hRetRingFace  = gobjects(2,1); % inner face (at the inboard end)
+for e = 1:2
+    S.hRetRingOuter(e) = surf(S.ax, X2, X2, X2, 'FaceColor', [0.85 0.85 0.85], 'EdgeColor','none', 'Visible','off');
+    S.hRetRingInner(e) = surf(S.ax, X2, X2, X2, 'FaceColor', [0.78 0.78 0.78], 'EdgeColor','none', 'Visible','off');
+    S.hRetRingFace(e)  = surf(S.ax, X2, X2, X2, 'FaceColor', [0.82 0.82 0.82], 'EdgeColor','none', 'Visible','off');
+    S.hRetRingCap(e)   = surf(S.ax, X2, X2, X2, 'FaceColor', [0.82 0.82 0.82], 'EdgeColor','none', 'Visible','off');
+end
+
 %% ---------- HUD + CONTROLS ----------
 S = ret.buildHUDandControls(S);
 

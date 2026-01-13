@@ -101,48 +101,67 @@ if ~isfield(S,'allow') || ~isstruct(S.allow), S.allow = struct(); end
 if ~isfield(S.allow,'yield') || ~isstruct(S.allow.yield), S.allow.yield = struct(); end
 if ~isfield(S.allow,'ult')   || ~isstruct(S.allow.ult),   S.allow.ult   = struct(); end
 
-% ===== Defaults (match your margins sheet) =====
-S.allow.yield.shearOut       = localDefField(S.allow.yield, 'shearOut',       43.67);
-S.allow.ult.shearOut         = localDefField(S.allow.ult,   'shearOut',       43.67);
+% ===== Defaults (sourced from ret.defaults) =====
+D = ret.defaults();
 
-S.allow.yield.netTension     = localDefField(S.allow.yield, 'netTension',     17.28);
-S.allow.ult.netTension       = localDefField(S.allow.ult,   'netTension',     17.28);
+S.allow.yield.shearOut       = localDefField(S.allow.yield, 'shearOut',       D.allow.yield.shearOut);
+S.allow.ult.shearOut         = localDefField(S.allow.ult,   'shearOut',       D.allow.ult.shearOut);
 
-S.allow.yield.pressureVessel = localDefField(S.allow.yield, 'pressureVessel', 68.40);
-S.allow.ult.pressureVessel   = localDefField(S.allow.ult,   'pressureVessel', 68.40);
+S.allow.yield.netTension     = localDefField(S.allow.yield, 'netTension',     D.allow.yield.netTension);
+S.allow.ult.netTension       = localDefField(S.allow.ult,   'netTension',     D.allow.ult.netTension);
 
-% Bearing unknown in the sheet -> blank default
-S.allow.yield.bearing        = localDefField(S.allow.yield, 'bearing', NaN);
-S.allow.ult.bearing          = localDefField(S.allow.ult,   'bearing', NaN);
+S.allow.yield.pressureVessel = localDefField(S.allow.yield, 'pressureVessel', D.allow.yield.pressureVessel);
+S.allow.ult.pressureVessel   = localDefField(S.allow.ult,   'pressureVessel', D.allow.ult.pressureVessel);
+
+S.allow.yield.bearing        = localDefField(S.allow.yield, 'bearing',        D.allow.yield.bearing);
+S.allow.ult.bearing          = localDefField(S.allow.ult,   'bearing',        D.allow.ult.bearing);
 
 % Pins
-S.allow.yield.pinShear       = localDefField(S.allow.yield, 'pinShear', 58.00);
-S.allow.ult.pinShear         = localDefField(S.allow.ult,   'pinShear', 104.00);
+S.allow.yield.pinShear       = localDefField(S.allow.yield, 'pinShear', D.allow.yield.pinShear);
+S.allow.ult.pinShear         = localDefField(S.allow.ult,   'pinShear', D.allow.ult.pinShear);
 
 % Ret ring
-S.allow.yield.ret_shearOut   = localDefField(S.allow.yield, 'ret_shearOut',   20.00);
-S.allow.ult.ret_shearOut     = localDefField(S.allow.ult,   'ret_shearOut',   27.00);
-S.allow.yield.ret_netTension = localDefField(S.allow.yield, 'ret_netTension', 35.00);
-S.allow.ult.ret_netTension   = localDefField(S.allow.ult,   'ret_netTension', 42.00);
-S.allow.yield.ret_bearing    = localDefField(S.allow.yield, 'ret_bearing',    58.00);
-S.allow.ult.ret_bearing      = localDefField(S.allow.ult,   'ret_bearing',    88.00);
+S.allow.yield.ret_shearOut   = localDefField(S.allow.yield, 'ret_shearOut',   D.allow.yield.ret_shearOut);
+S.allow.ult.ret_shearOut     = localDefField(S.allow.ult,   'ret_shearOut',   D.allow.ult.ret_shearOut);
+S.allow.yield.ret_netTension = localDefField(S.allow.yield, 'ret_netTension', D.allow.yield.ret_netTension);
+S.allow.ult.ret_netTension   = localDefField(S.allow.ult,   'ret_netTension', D.allow.ult.ret_netTension);
+S.allow.yield.ret_bearing    = localDefField(S.allow.yield, 'ret_bearing',    D.allow.yield.ret_bearing);
+S.allow.ult.ret_bearing      = localDefField(S.allow.ult,   'ret_bearing',    D.allow.ult.ret_bearing);
 
 % Column layout: Label | Yield | Ultimate
 xL  = 0.02; wL  = 0.52;
 xY  = 0.56; wY  = 0.19;
 xU  = 0.78; wU  = 0.19;
 
+% For casing allowables we use a single wide box (applies to both yield + ultimate)
+xC  = xY;
+wC  = (xU + wU) - xY;
+
 hA  = 0.095;
-yA0 = 0.86;
+
+% Start the rows a bit lower so the header text never gets clipped
+% by the top edge of the allowables panel.
+yA0 = 0.80;
 dyA = 0.105;
 
+% Header row (above the first allowable row)
+% Keep yHdr + hHdr <= 0.99 to avoid top clipping.
+yHdr = min(0.93, yA0 + 1.1*dyA);
+hHdr = 0.06;
+
+
 uicontrol(S.pOptAllow,'Style','text','Units','normalized', ...
-    'Position',[xY yA0+dyA*0.32 wY hA*0.75],'String','Yield', ...
+    'Position',[xL yHdr wL hHdr],'String','Failure Mode', ...
+    'HorizontalAlignment','left','BackgroundColor',[0.9 1 0.9], ...
+    'ForegroundColor',[0 0.4 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
+
+uicontrol(S.pOptAllow,'Style','text','Units','normalized', ...
+    'Position',[xY yHdr wY hHdr],'String','Yield', ...
     'HorizontalAlignment','center','BackgroundColor',[0.9 1 0.9], ...
     'ForegroundColor',[0 0.4 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
 
 uicontrol(S.pOptAllow,'Style','text','Units','normalized', ...
-    'Position',[xU yA0+dyA*0.32 wU hA*0.75],'String','Ultimate', ...
+    'Position',[xU yHdr wU hHdr],'String','Ultimate', ...
     'HorizontalAlignment','center','BackgroundColor',[0.9 1 0.9], ...
     'ForegroundColor',[0 0.4 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
 
@@ -158,26 +177,29 @@ mkEditA = @(val, yy, xpos, tag) uicontrol(S.pOptAllow,'Style','edit','Units','no
     'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontSize',fontsize3, ...
     'Callback',@ret.onAllowablesChanged);
 
+mkEditWideA = @(val, yy, tag) uicontrol(S.pOptAllow,'Style','edit','Units','normalized', ...
+    'Position',[xC yy wC hA], ...
+    'String', localNumStr(val,'%.4f'), ...
+    'Tag',tag, ...
+    'BackgroundColor',[1 1 1],'ForegroundColor',[0 0 0],'FontSize',fontsize3, ...
+    'Callback',@ret.onAllowablesChanged);
+
 % Rows
 yy = yA0;
 mkLabelA('Casing Shear-Out', yy);
-S.edAllowY_shearOut = mkEditA(S.allow.yield.shearOut, yy, xY, 'allow_y_shearOut');
-S.edAllowU_shearOut = mkEditA(S.allow.ult.shearOut,   yy, xU, 'allow_u_shearOut');
+S.edAllowC_shearOut = mkEditWideA(S.allow.yield.shearOut, yy, 'allow_c_shearOut');
 
 yy = yy - dyA;
 mkLabelA('Casing Net Tension', yy);
-S.edAllowY_netT = mkEditA(S.allow.yield.netTension, yy, xY, 'allow_y_netTension');
-S.edAllowU_netT = mkEditA(S.allow.ult.netTension,   yy, xU, 'allow_u_netTension');
+S.edAllowC_netT = mkEditWideA(S.allow.yield.netTension, yy, 'allow_c_netTension');
 
 yy = yy - dyA;
 mkLabelA('Casing Bearing', yy);
-S.edAllowY_bear = mkEditA(S.allow.yield.bearing, yy, xY, 'allow_y_bearing');
-S.edAllowU_bear = mkEditA(S.allow.ult.bearing,   yy, xU, 'allow_u_bearing');
+S.edAllowC_bear = mkEditWideA(S.allow.yield.bearing, yy, 'allow_c_bearing');
 
 yy = yy - dyA;
 mkLabelA('Casing Pressure Vessel', yy);
-S.edAllowY_pv = mkEditA(S.allow.yield.pressureVessel, yy, xY, 'allow_y_pressureVessel');
-S.edAllowU_pv = mkEditA(S.allow.ult.pressureVessel,   yy, xU, 'allow_u_pressureVessel');
+S.edAllowC_pv = mkEditWideA(S.allow.yield.pressureVessel, yy, 'allow_c_pressureVessel');
 
 yy = yy - dyA;
 mkLabelA('Pins Pin Shear', yy);
@@ -262,7 +284,7 @@ S.edBndPinDiaMax = mkEditB(S.optBounds.pinDia(2), yB-5*dyB, xMaxB);
 % =========================
 S.pOptResults = uipanel(S.pOpt, ...
     'Units', 'normalized', ...
-    'Position', [0.02 0.14 0.96 0.24], ...
+    'Position', [0.02 0.11 0.96 0.28], ...
     'Title', 'Margin Status', ...
     'ForegroundColor', [0 0 0], ...
     'BackgroundColor', [1 1 1]);
@@ -274,8 +296,8 @@ x2 = 0.25; w2 = 0.35;
 x3 = 0.61; w3 = 0.18;
 x4 = 0.80; w4 = 0.18;
 
-hR = 0.11;
-y0 = 0.86;
+hR = 0.10;
+y0 = 0.88;
 
 uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
     'Position',[x1 y0 w1 hR],'String','Component', ...
@@ -286,11 +308,11 @@ uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
     'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
     'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
 uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
-    'Position',[x3 y0 w3 hR],'String','Yield Margin', ...
+    'Position',[x3 y0 w3 hR],'String','Yield MOS', ...
     'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
     'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
 uicontrol(S.pOptResults,'Style','text','Units','normalized', ...
-    'Position',[x4 y0 w4 hR],'String','Ultimate Margin', ...
+    'Position',[x4 y0 w4 hR],'String','Ultimate MOS', ...
     'HorizontalAlignment','left','BackgroundColor',[1 1 1], ...
     'ForegroundColor',[0 0 0],'FontName','Consolas','FontSize',fontsize4,'FontWeight','bold');
 
@@ -321,7 +343,7 @@ end
 S.btnOptimize = uicontrol(S.pOpt, ...
     'Style', 'pushbutton', ...
     'Units', 'normalized', ...
-    'Position', [0.1 0.02 0.8 0.08], ...
+    'Position', [0.12 0.02 0.76 0.06], ...
     'String', 'Run Optimization', ...
     'BackgroundColor', [0.2 0.6 0.2], ...
     'ForegroundColor', [1 1 1], ...
@@ -333,7 +355,7 @@ S.btnOptimize = uicontrol(S.pOpt, ...
 S.txtOptStatus = uicontrol(S.pOpt, ...
     'Style', 'text', ...
     'Units', 'normalized', ...
-    'Position', [0.02 0.10 0.96 0.02], ...
+    'Position', [0.02 0.08 0.96 0.02], ...
     'String', '', ...
     'HorizontalAlignment', 'center', ...
     'BackgroundColor', [0.95 0.95 1], ...
@@ -368,74 +390,50 @@ mkLabel('Wall Thickness (in)', yTop-dy);
 S.edT = mkEdit(S.t, yTop-dy, 't');
 set(S.edT, 'BackgroundColor', mainYellow);
 
-mkLabel('View Toggle', yTop-2*dy);
-isFull = isfield(S,'lengthMode') && (S.lengthMode == "full");
-btnStr = 'Retention Detail View';
-if isFull, btnStr = 'Full Casing'; end
-S.btnLengthMode = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
-    'Position',[xC2 (yTop-2*dy) wC2 h2], ...
-    'String', btnStr, ...
-    'Value', double(isFull), ...
-    'BackgroundColor',[0.95 0.95 0.95], ...
-    'ForegroundColor',[0 0 0], ...
-    'FontName','Consolas', ...
-    'FontSize', fontsize2, ...
-    'Callback',@ret.onAnyInputChanged);
+mkLabel('MEOP (psi)', yTop-2*dy);
+S.edMEOP = mkEdit(S.MEOP_psi, yTop-2*dy, 'MEOP_psi');
 
-mkLabel('MEOP (psi)', yTop-3*dy);
-S.edMEOP = mkEdit(S.MEOP_psi, yTop-3*dy, 'MEOP_psi');
-
-% Ensure FOS defaults exist (from margins sheet)
+% Ensure FOS defaults exist
+% - Casing uses a single FOS
+% - Pins and retention ring share the same Yield/Ultimate FOS inputs
 if ~isfield(S,'FOS') || ~isstruct(S.FOS), S.FOS = struct(); end
-if ~isfield(S.FOS,'casing_y') || ~isfinite(S.FOS.casing_y), S.FOS.casing_y = 2.00; end
-if ~isfield(S.FOS,'casing_u') || ~isfinite(S.FOS.casing_u), S.FOS.casing_u = 2.00; end
-if ~isfield(S.FOS,'pin_y')    || ~isfinite(S.FOS.pin_y),    S.FOS.pin_y    = 1.75; end
-if ~isfield(S.FOS,'pin_u')    || ~isfinite(S.FOS.pin_u),    S.FOS.pin_u    = 2.00; end
-if ~isfield(S.FOS,'ret_y')    || ~isfinite(S.FOS.ret_y),    S.FOS.ret_y    = 1.75; end
-if ~isfield(S.FOS,'ret_u')    || ~isfinite(S.FOS.ret_u),    S.FOS.ret_u    = 2.00; end
+if ~isfield(S.FOS,'casing')  || ~isfinite(S.FOS.casing),  S.FOS.casing  = 2.00; end
+if ~isfield(S.FOS,'comp_y')  || ~isfinite(S.FOS.comp_y),  S.FOS.comp_y  = 1.75; end
+if ~isfield(S.FOS,'comp_u')  || ~isfinite(S.FOS.comp_u),  S.FOS.comp_u  = 2.00; end
 
-mkLabel('Casing FOS (Yield)', yTop-4*dy);
-S.edFOS_cy = mkEdit(S.FOS.casing_y, yTop-4*dy, 'FOS.casing_y');
+mkLabel('Casing FOS', yTop-3*dy);
+S.edFOS_casing = mkEdit(S.FOS.casing, yTop-3*dy, 'FOS.casing');
 
-mkLabel('Casing FOS (Ultimate)', yTop-5*dy);
-S.edFOS_cu = mkEdit(S.FOS.casing_u, yTop-5*dy, 'FOS.casing_u');
+mkLabel('Pin/Ret Ring Yield FOS', yTop-4*dy);
+S.edFOS_compY = mkEdit(S.FOS.comp_y, yTop-4*dy, 'FOS.comp_y');
 
-mkLabel('Pin FOS (Yield)', yTop-6*dy);
-S.edFOS_py = mkEdit(S.FOS.pin_y, yTop-6*dy, 'FOS.pin_y');
+mkLabel('Pin/Ret Ring Ultimate FOS', yTop-5*dy);
+S.edFOS_compU = mkEdit(S.FOS.comp_u, yTop-5*dy, 'FOS.comp_u');
 
-mkLabel('Pin FOS (Ultimate)', yTop-7*dy);
-S.edFOS_pu = mkEdit(S.FOS.pin_u, yTop-7*dy, 'FOS.pin_u');
-
-mkLabel('Ret Ring FOS (Yield)', yTop-8*dy);
-S.edFOS_ry = mkEdit(S.FOS.ret_y, yTop-8*dy, 'FOS.ret_y');
-
-mkLabel('Ret Ring FOS (Ultimate)', yTop-9*dy);
-S.edFOS_ru = mkEdit(S.FOS.ret_u, yTop-9*dy, 'FOS.ret_u');
-
-mkLabel('Axial Rows', yTop-10*dy);
-S.edRows = mkEdit(S.nRows, yTop-10*dy, 'nRows');
+mkLabel('Axial Rows', yTop-6*dy);
+S.edRows = mkEdit(S.nRows, yTop-6*dy, 'nRows');
 set(S.edRows, 'BackgroundColor', mainYellow);
 
-mkLabel('Pins per Row', yTop-11*dy);
-S.edPPR = mkEdit(S.nPinsPerRow, yTop-11*dy, 'nPinsPerRow');
+mkLabel('Pins per Row', yTop-7*dy);
+S.edPPR = mkEdit(S.nPinsPerRow, yTop-7*dy, 'nPinsPerRow');
 set(S.edPPR, 'BackgroundColor', mainYellow);
 
-mkLabel('Row Spacing (in)', yTop-12*dy);
-S.edRowSp = mkEdit(S.rowSpacing, yTop-12*dy, 'rowSpacing');
+mkLabel('Row Spacing (in)', yTop-8*dy);
+S.edRowSp = mkEdit(S.rowSpacing, yTop-8*dy, 'rowSpacing');
 set(S.edRowSp, 'BackgroundColor', mainYellow);
 
-mkLabel('First Row Offset (in)', yTop-13*dy);
-S.edFirst = mkEdit(S.firstRowZ, yTop-13*dy, 'firstRowZ');
+mkLabel('First Row Offset (in)', yTop-9*dy);
+S.edFirst = mkEdit(S.firstRowZ, yTop-9*dy, 'firstRowZ');
 set(S.edFirst, 'BackgroundColor', mainYellow);
 
-mkLabel('Pin Diameter (in)', yTop-14*dy);
+mkLabel('Pin Diameter (in)', yTop-10*dy);
 pinStrs = compose('%.4f', S.allowedPinDias);
 [~, idx] = min(abs(S.allowedPinDias - S.pinDia));
 
 S.ddPinDia = uicontrol(S.pIn, ...
     'Style','popupmenu', ...
     'Units','normalized', ...
-    'Position',[xC2 (yTop-14*dy) wC2 h2], ...
+    'Position',[xC2 (yTop-10*dy) wC2 h2], ...
     'String', pinStrs, ...
     'Value', idx, ...
     'BackgroundColor', mainYellow, ...
@@ -444,29 +442,73 @@ S.ddPinDia = uicontrol(S.pIn, ...
     'Callback',@ret.onAnyInputChanged);
 set(S.ddPinDia, 'ForegroundColor', [0 0 0]);
 
-mkLabel('Pin Pattern*', yTop-15*dy);
+mkLabel('Pin Pattern*', yTop-11*dy);
 isAlt = (S.pinPatternMode == "alternating");
-btnStr2 = "Pattern: Progressive";
-if isAlt, btnStr2 = "Pattern: Alternating"; end
+btnStr2 = "Spiral";
+if isAlt, btnStr2 = "Alternating"; end
 
 S.btnPattern = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
-    'Position',[xC2 (yTop-15*dy) wC2 h2], ...
+    'Position',[xC2 (yTop-11*dy) wC2 h2], ...
     'String', btnStr2, ...
     'Value', isAlt, ...
-    'BackgroundColor', [1 1 1], ...
+    'BackgroundColor',[0.95 0.95 0.95], ...
     'ForegroundColor',[0 0 0], ...
     'FontName','Consolas', ...
     'FontSize', fontsize3, ...
     'Callback',@ret.onAnyInputChanged);
 
+% -------- View toggle + Ret ring visibility (grouped with pattern) --------
+mkLabel('View Toggle', yTop-12*dy);
+isFull = isfield(S,'lengthMode') && (S.lengthMode == "full");
+btnStr = 'Retention Detail View';
+if isFull, btnStr = 'Full Casing'; end
+S.btnLengthMode = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
+    'Position',[xC2 (yTop-12*dy) wC2 h2], ...
+    'String', btnStr, ...
+    'Value', double(isFull), ...
+    'BackgroundColor',[0.95 0.95 0.95], ...
+    'ForegroundColor',[0 0 0], ...
+    'FontName','Consolas', ...
+    'FontSize', fontsize2, ...
+    'Callback',@ret.onAnyInputChanged);
+
+% Default if missing
+if ~isfield(S,'showRetRings') || ~islogical(S.showRetRings)
+    S.showRetRings = true;
+end
+mkLabel('Ret Ring', yTop-13*dy);
+isShown = (S.showRetRings == true);
+btnRetStr = 'Visible';
+if ~isShown, btnRetStr = 'Hidden'; end
+S.btnShowRetRings = uicontrol(S.pIn, 'Style','togglebutton', 'Units','normalized', ...
+    'Position',[xC2 (yTop-13*dy) wC2 h2], ...
+    'String', btnRetStr, ...
+    'Value', double(isShown), ...
+    'BackgroundColor',[0.95 0.95 0.95], ...
+    'ForegroundColor',[0 0 0], ...
+    'FontName','Consolas', ...
+    'FontSize', fontsize2, ...
+    'Callback',@ret.onAnyInputChanged);
+
 %% =========================
 % Local helpers
 % =========================
-    function s = localNumStr(v, fmt)
+    function s = localNumStr(v, fmt) %#ok<INUSD>
+        % Smart formatting for UI fields:
+        % - NaN -> blank
+        % - integers -> no trailing decimals
+        % - otherwise -> trimmed decimals
         if ~isfinite(v)
             s = '';
+            return;
+        end
+        if abs(v - round(v)) < 1e-9
+            s = sprintf('%d', round(v));
         else
-            s = num2str(v, fmt);
+            % keep up to 4 decimals but strip trailing zeros
+            s = sprintf('%.4f', v);
+            s = regexprep(s, '(?<=\d)0+$', '');
+            s = regexprep(s, '\.$', '');
         end
     end
 

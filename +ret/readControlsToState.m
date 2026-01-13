@@ -14,24 +14,20 @@ end
 % -------- FOS (new UI) or DF (old UI fallback) --------
 if ~isfield(S,'FOS') || ~isstruct(S.FOS), S.FOS = struct(); end
 
-% Defaults if missing (from your margins sheet)
-if ~isfield(S.FOS,'casing_y') || ~isfinite(S.FOS.casing_y), S.FOS.casing_y = 2.00; end
-if ~isfield(S.FOS,'casing_u') || ~isfinite(S.FOS.casing_u), S.FOS.casing_u = 2.00; end
-if ~isfield(S.FOS,'pin_y')    || ~isfinite(S.FOS.pin_y),    S.FOS.pin_y    = 1.75; end
-if ~isfield(S.FOS,'pin_u')    || ~isfinite(S.FOS.pin_u),    S.FOS.pin_u    = 2.00; end
-if ~isfield(S.FOS,'ret_y')    || ~isfinite(S.FOS.ret_y),    S.FOS.ret_y    = 1.75; end
-if ~isfield(S.FOS,'ret_u')    || ~isfinite(S.FOS.ret_u),    S.FOS.ret_u    = 2.00; end
+% Defaults if missing
+% - Casing uses a single FOS
+% - Pins and retention ring share the same Yield/Ultimate FOS inputs
+if ~isfield(S.FOS,'casing') || ~isfinite(S.FOS.casing), S.FOS.casing = 2.00; end
+if ~isfield(S.FOS,'comp_y') || ~isfinite(S.FOS.comp_y), S.FOS.comp_y = 1.75; end
+if ~isfield(S.FOS,'comp_u') || ~isfinite(S.FOS.comp_u), S.FOS.comp_u = 2.00; end
 
 % If new FOS edit boxes exist, read them
-hasFOS = isfield(S,'edFOS_cy') && isgraphics(S.edFOS_cy);
+hasFOS = isfield(S,'edFOS_casing') && isgraphics(S.edFOS_casing);
 
 if hasFOS
-    S.FOS.casing_y = localReadNum(S.edFOS_cy, S.FOS.casing_y);
-    S.FOS.casing_u = localReadNum(S.edFOS_cu, S.FOS.casing_u);
-    S.FOS.pin_y    = localReadNum(S.edFOS_py, S.FOS.pin_y);
-    S.FOS.pin_u    = localReadNum(S.edFOS_pu, S.FOS.pin_u);
-    S.FOS.ret_y    = localReadNum(S.edFOS_ry, S.FOS.ret_y);
-    S.FOS.ret_u    = localReadNum(S.edFOS_ru, S.FOS.ret_u);
+    S.FOS.casing = localReadNum(S.edFOS_casing, S.FOS.casing);
+    S.FOS.comp_y = localReadNum(S.edFOS_compY,  S.FOS.comp_y);
+    S.FOS.comp_u = localReadNum(S.edFOS_compU,  S.FOS.comp_u);
 else
     % Old UI fallback: DF fields
     if ~isfield(S,'DF_casing') || ~isfinite(S.DF_casing), S.DF_casing = 2.00; end
@@ -45,13 +41,14 @@ else
     end
 
     % map into FOS so downstream code can rely on it
-    S.FOS.casing_y = S.DF_casing;
-    S.FOS.casing_u = S.DF_casing;
-    S.FOS.pin_y    = S.DF_pin;
-    S.FOS.pin_u    = S.DF_pin;
-    S.FOS.ret_y    = S.DF_casing;
-    S.FOS.ret_u    = S.DF_casing;
+    S.FOS.casing = S.DF_casing;
+    S.FOS.comp_y = S.DF_pin;
+    S.FOS.comp_u = S.DF_pin;
 end
+
+% Keep legacy DF fields in sync (used by some displays/constraints)
+S.DF_casing = S.FOS.casing;
+S.DF_pin    = S.FOS.comp_y;
 
 % -------- Rows / geometry inputs --------
 if isfield(S,'edRows') && isgraphics(S.edRows)
@@ -93,20 +90,31 @@ end
 if isfield(S,'btnPattern') && isgraphics(S.btnPattern)
     if get(S.btnPattern, 'Value') == 1
         S.pinPatternMode = "alternating";
-        set(S.btnPattern, 'String', "Pattern: Alternating");
+        set(S.btnPattern, 'String', "Alternating");
     else
-        S.pinPatternMode = "progressive";
-        set(S.btnPattern, 'String', "Pattern: Progressive");
+        S.pinPatternMode = "spiral";
+        set(S.btnPattern, 'String', "Spiral");
+    end
+end
+
+% -------- Ret ring visibility --------
+if isfield(S,'btnShowRetRings') && isgraphics(S.btnShowRetRings)
+    isShown = (get(S.btnShowRetRings,'Value') == 1);
+    S.showRetRings = isShown;
+    if isShown
+        set(S.btnShowRetRings,'String','Visible');
+    else
+        set(S.btnShowRetRings,'String','Hidden');
     end
 end
 
 % -------- Safety clamps --------
-if ~isfinite(S.ID) || S.ID<=0, S.ID = 6.0; end
-if ~isfinite(S.t)  || S.t<=0,  S.t = 0.225; end
-if ~isfinite(S.MEOP_psi) || S.MEOP_psi<=0, S.MEOP_psi = 650; end
-if ~isfinite(S.rowSpacing) || S.rowSpacing<=0, S.rowSpacing = 0.5; end
-if ~isfinite(S.firstRowZ)  || S.firstRowZ<0,   S.firstRowZ  = 0.875; end
-if ~isfinite(S.pinDia)     || S.pinDia<=0,     S.pinDia     = 0.25; end
+if ~isfinite(S.ID) || S.ID<=0, S.ID = 8.0; end
+if ~isfinite(S.t)  || S.t<=0,  S.t = 0.25; end
+if ~isfinite(S.MEOP_psi) || S.MEOP_psi<=0, S.MEOP_psi = 850; end
+if ~isfinite(S.rowSpacing) || S.rowSpacing<=0, S.rowSpacing = 0.75; end
+if ~isfinite(S.firstRowZ)  || S.firstRowZ<0,   S.firstRowZ  = 1.0; end
+if ~isfinite(S.pinDia)     || S.pinDia<=0,     S.pinDia     = 0.375; end
 
 % Push formatting back (only if controls exist)
 if isfield(S,'edRows') && isgraphics(S.edRows), set(S.edRows,'String', num2str(S.nRows)); end

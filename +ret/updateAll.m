@@ -69,6 +69,7 @@ S = ret.updateView(S, r_o);
 % =========================
 S = ret.updateCasingSurfaces(S, r_i, r_o);
 S = ret.updatePins(S, r_o);
+S = ret.updateRetRings(S, r_i);
 
 %% ===== MASS CALCS =====
 nEnds_mass = 2;
@@ -206,6 +207,7 @@ stressOutText = sprintf([ ...
     'Axial End Force (Pins):   %.0f lbf\n' ...
     'Avg Force per Pin (Casing DF): %.1f lbf\n' ...
     'Avg Force per Pin (Pin DF):    %.1f lbf\n' ...
+    '-------------------\n' ...
     '\n' ...
     'Shear Out Stress: %.4f KSI\n' ...
     'Net Tension: %.4f KSI\n' ...
@@ -241,27 +243,27 @@ cases = struct([]);
 
 cases(1).name  = 'Shear Out';
 cases(1).load  = Load_ShearOut_MEOP;
-cases(1).allow = S.targets.shearOut_max;
+cases(1).allow = S.allow.yield.shearOut;
 cases(1).fos   = S.DF_casing;
 
 cases(2).name  = 'Net Tension';
 cases(2).load  = Load_NetTens_MEOP;
-cases(2).allow = S.targets.netTension_max;
+cases(2).allow = S.allow.yield.netTension;
 cases(2).fos   = S.DF_casing;
 
 cases(3).name  = 'Pin Shear';
 cases(3).load  = Load_PinShear_MEOP;
-cases(3).allow = S.targets.pinShear_max;
+cases(3).allow = S.allow.yield.pinShear;
 cases(3).fos   = S.DF_pin;
 
 cases(4).name  = 'Bearing';
 cases(4).load  = Load_Bearing_MEOP;
-cases(4).allow = S.targets.bearing_max;
+cases(4).allow = S.allow.yield.bearing;
 cases(4).fos   = S.DF_casing;
 
 cases(5).name  = 'P Vessel';
 cases(5).load  = Load_PV_MEOP;
-cases(5).allow = S.targets.pressure_vessel_max;
+cases(5).allow = S.allow.yield.pressureVessel;
 cases(5).fos   = S.DF_casing;
 
 S = ret.updateMarginStatus(S, cases);
@@ -290,46 +292,46 @@ rows = struct([]);
 
 % ---- CASING ----
 rows(1).component = "Casing";
-rows(1).caseName  = "(Casing) Shear-Out";
-rows(1).marginY   = marg(S.allow.yield.shearOut, Load_ShearOut, S.FOS.casing_y);
-rows(1).marginU   = marg(S.allow.ult.shearOut,   Load_ShearOut, S.FOS.casing_u);
+rows(1).caseName  = "Shear-Out";
+rows(1).marginY   = marg(S.allow.yield.shearOut, Load_ShearOut, S.FOS.casing);
+rows(1).marginU   = marg(S.allow.ult.shearOut,   Load_ShearOut, S.FOS.casing);
 
 rows(2).component = "Casing";
-rows(2).caseName  = "(Casing) Net Tension";
-rows(2).marginY   = marg(S.allow.yield.netTension, Load_NetTens, S.FOS.casing_y);
-rows(2).marginU   = marg(S.allow.ult.netTension,   Load_NetTens, S.FOS.casing_u);
+rows(2).caseName  = "Net Tension";
+rows(2).marginY   = marg(S.allow.yield.netTension, Load_NetTens, S.FOS.casing);
+rows(2).marginU   = marg(S.allow.ult.netTension,   Load_NetTens, S.FOS.casing);
 
 rows(3).component = "Casing";
-rows(3).caseName  = "(Casing) Bearing";
-rows(3).marginY   = marg(S.allow.yield.bearing, Load_Bearing, S.FOS.casing_y);
-rows(3).marginU   = marg(S.allow.ult.bearing,   Load_Bearing, S.FOS.casing_u);
+rows(3).caseName  = "Bearing";
+rows(3).marginY   = marg(S.allow.yield.bearing, Load_Bearing, S.FOS.casing);
+rows(3).marginU   = marg(S.allow.ult.bearing,   Load_Bearing, S.FOS.casing);
 
 rows(4).component = "Casing";
-rows(4).caseName  = "(Casing) Pressure Vessel";
-rows(4).marginY   = marg(S.allow.yield.pressureVessel, Load_PV, S.FOS.casing_y);
-rows(4).marginU   = marg(S.allow.ult.pressureVessel,   Load_PV, S.FOS.casing_u);
+rows(4).caseName  = "Pressure Vessel";
+rows(4).marginY   = marg(S.allow.yield.pressureVessel, Load_PV, S.FOS.casing);
+rows(4).marginU   = marg(S.allow.ult.pressureVessel,   Load_PV, S.FOS.casing);
 
 % ---- PINS ----
 rows(5).component = "Pins";
-rows(5).caseName  = "(Pins) Pin Shear";
-rows(5).marginY   = marg(S.allow.yield.pinShear, Load_PinShear, S.FOS.pin_y);
-rows(5).marginU   = marg(S.allow.ult.pinShear,   Load_PinShear, S.FOS.pin_u);
+rows(5).caseName  = "Pin Shear";
+rows(5).marginY   = marg(S.allow.yield.pinShear, Load_PinShear, S.FOS.comp_y);
+rows(5).marginU   = marg(S.allow.ult.pinShear,   Load_PinShear, S.FOS.comp_u);
 
 % ---- RET RING ---- (defaults to N/A if allowables are NaN)
 rows(6).component = "Ret Ring";
-rows(6).caseName  = "(Ret Ring) Shear-Out";
-rows(6).marginY   = marg(S.allow.yield.ret_shearOut, Load_ShearOut, S.FOS.ret_y);
-rows(6).marginU   = marg(S.allow.ult.ret_shearOut,   Load_ShearOut, S.FOS.ret_u);
+rows(6).caseName  = "Shear-Out";
+rows(6).marginY   = marg(S.allow.yield.ret_shearOut, Load_ShearOut, S.FOS.comp_y);
+rows(6).marginU   = marg(S.allow.ult.ret_shearOut,   Load_ShearOut, S.FOS.comp_u);
 
 rows(7).component = "Ret Ring";
-rows(7).caseName  = "(Ret Ring) Net Tension";
-rows(7).marginY   = marg(S.allow.yield.ret_netTension, Load_NetTens, S.FOS.ret_y);
-rows(7).marginU   = marg(S.allow.ult.ret_netTension,   Load_NetTens, S.FOS.ret_u);
+rows(7).caseName  = "Net Tension";
+rows(7).marginY   = marg(S.allow.yield.ret_netTension, Load_NetTens, S.FOS.comp_y);
+rows(7).marginU   = marg(S.allow.ult.ret_netTension,   Load_NetTens, S.FOS.comp_u);
 
 rows(8).component = "Ret Ring";
-rows(8).caseName  = "(Ret Ring) Bearing";
-rows(8).marginY   = marg(S.allow.yield.ret_bearing, Load_Bearing, S.FOS.ret_y);
-rows(8).marginU   = marg(S.allow.ult.ret_bearing,   Load_Bearing, S.FOS.ret_u);
+rows(8).caseName  = "Bearing";
+rows(8).marginY   = marg(S.allow.yield.ret_bearing, Load_Bearing, S.FOS.comp_y);
+rows(8).marginU   = marg(S.allow.ult.ret_bearing,   Load_Bearing, S.FOS.comp_u);
 
 S = ret.updateMarginTable(S, rows);
 

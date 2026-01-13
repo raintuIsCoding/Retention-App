@@ -27,7 +27,7 @@ for iRow = 1:S.nRows
     xRow = S.firstRowZ + (iRow - 1)*S.rowSpacing;
 
     switch S.pinPatternMode
-        case "progressive"
+        case "spiral"
             rowAngleOffset = (iRow - 1) * (pitch / S.nRows);
         case "alternating"
             rowAngleOffset = mod((iRow - 1 + S.altStartPhase), 2) * (pitch/2);
