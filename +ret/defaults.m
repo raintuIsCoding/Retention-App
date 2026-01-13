@@ -22,7 +22,7 @@ S.retRingLengthMin   = 1.0;  % minimum retention length per end
 S.configViewLength   = 10.0; % rendered length in config view
 
 % Loads inputs
-S.MEOP_psi   = 650;   % psi
+S.MEOP_psi   = 850;   % psi
 S.DF_casing = 2;
 S.DF_pin    = 1.75;
 
