@@ -196,48 +196,77 @@ if ~isfinite(A_pin) || A_pin <= 0, A_pin = 1e-6; end
 Pin_Shear = (F_perPin_pin / A_pin) / 1000;
 Bearing   = (F_perPin_casing / (S.pinDia * S.t)) / 1000;
 
-% Thick-wall pressure vessel hoop at inner surface (KSI)
-OD = S.ID + 2*S.t;
-Pressure_Vessel  = (p_design_casing * ((OD^2 + S.ID^2) / (OD^2 - S.ID^2))) / 1000;
-
-stressOutText = sprintf([ ...
-    'Design Pressure (Casing): %.1f psi\n' ...
-    'Design Pressure (Pins):   %.1f psi\n' ...
-    'Axial End Force (Casing): %.0f lbf\n' ...
-    'Axial End Force (Pins):   %.0f lbf\n' ...
-    'Avg Force per Pin (Casing DF): %.1f lbf\n' ...
-    'Avg Force per Pin (Pin DF):    %.1f lbf\n' ...
-    '-------------------\n' ...
-    '\n' ...
-    'Shear Out Stress: %.4f KSI\n' ...
-    'Net Tension: %.4f KSI\n' ...
-    'Pin Shear: %.4f KSI\n' ...
-    'Bearing: %.4f KSI\n' ...
-    'Pressure Vessel: %.4f KSI\n' ], ...
-    p_design_casing, p_design_pin, F_axial_casing, F_axial_pin, ...
-    F_perPin_casing, F_perPin_pin, ...
-    Stress_ShearOut, Net_Tension, Pin_Shear, Bearing, Pressure_Vessel);
-
-if isfield(S,'txtStress') && isgraphics(S.txtStress)
-    set(S.txtStress, 'String', stressOutText);
-end
-
 % ===== MARGIN STATUS (MEOP load, DF as FOS) =====
 p_meop = S.MEOP_psi;             % psi
 F_axial_meop = p_meop * A_bore;  % lbf
 
+% -----------------------
+% Retention ring loads (at MEOP)
+% IMPORTANT: Ret ring margins must NOT depend on casing wall thickness (S.t).
+% Use S.retRingThk for ret ring load areas.
+% -----------------------
+retRingThk = S.retRingThk;
+if ~isfinite(retRingThk) || retRingThk <= 0
+    retRingThk = 0.25;
+end
+
+% Shear-out (same geometric model as casing, but with ring thickness)
+A_ShearOut_ret_MEOP = sum((S.rowSpacing*(n-1) + S.firstRowZ) * retRingThk * 2 * S.nPinsPerRow);
+if ~isfinite(A_ShearOut_ret_MEOP) || A_ShearOut_ret_MEOP <= 0
+    A_ShearOut_ret_MEOP = 1e-6;
+end
+
+% Net tension (ring annulus area minus hole projections)
+A_ring_gross_MEOP = (pi/4) * (S.ID^2 - (S.ID - 2*retRingThk)^2);
+A_holes_per_row_ret_MEOP = S.pinDia * S.nPinsPerRow * retRingThk;
+if S.rowSpacing <= S.kInteract * S.pinDia
+    N_eff_ret_MEOP = S.nRows;
+else
+    N_eff_ret_MEOP = 1;
+end
+A_tension_ret_MEOP = A_ring_gross_MEOP - N_eff_ret_MEOP * A_holes_per_row_ret_MEOP;
+if ~isfinite(A_tension_ret_MEOP) || A_tension_ret_MEOP <= 0
+    A_tension_ret_MEOP = 1e-6;
+end
+
 F_perPin_meop = F_axial_meop / max(1, totalPins_oneEnd);
 
-% Loads at MEOP (KSI)
-Load_ShearOut_MEOP = (F_axial_meop / A_ShearOut) / 1000;
-Load_NetTens_MEOP  = (F_axial_meop / A_tension)  / 1000;
-Load_Bearing_MEOP  = (F_perPin_meop / (S.pinDia * S.t)) / 1000;
+Load_ShearOut_ret_MEOP = (F_axial_meop / A_ShearOut_ret_MEOP) / 1000;
+Load_NetTens_ret_MEOP  = (F_axial_meop / A_tension_ret_MEOP)  / 1000;
+Load_Bearing_ret_MEOP  = (F_perPin_meop / (S.pinDia * retRingThk)) / 1000;
 
 A_pin = (pi/4)*S.pinDia^2;
 Load_PinShear_MEOP = (F_perPin_meop / max(1e-6, A_pin)) / 1000;
 
 OD = S.ID + 2*S.t;
 Load_PV_MEOP = (p_meop * ((OD^2 + S.ID^2) / (OD^2 - S.ID^2))) / 1000;
+
+% Thick-wall pressure vessel hoop at inner surface (KSI)
+OD = S.ID + 2*S.t;
+Pressure_Vessel  = (p_design_casing * ((OD^2 + S.ID^2) / (OD^2 - S.ID^2))) / 1000;
+
+stressOutText = sprintf([ ...
+    'Shear-Out Stress: %.3f KSI\n' ...
+    'Net Tension: %.3f KSI\n' ...
+    'Bearing: %.3f KSI\n' ...
+    'Pressure Vessel: %.3f KSI\n' ...
+    '\n' ...
+    'Pin Shear: %.3f KSI\n' ...
+    '\n' ...
+    'Ret Shear-Out: %.3f KSI\n' ...
+    'Ret Net Tension: %.3f KSI\n' ...
+    'Ret Bearing: %.3f KSI\n'], ...
+    Stress_ShearOut, Net_Tension, Bearing, Pressure_Vessel, ...
+    Pin_Shear, Load_ShearOut_ret_MEOP, Load_NetTens_ret_MEOP, Load_Bearing_ret_MEOP);
+
+if isfield(S,'txtStress') && isgraphics(S.txtStress)
+    set(S.txtStress, 'String', stressOutText);
+end
+
+% Loads at MEOP (KSI)
+Load_ShearOut_MEOP = (F_axial_meop / A_ShearOut) / 1000;
+Load_NetTens_MEOP  = (F_axial_meop / A_tension)  / 1000;
+Load_Bearing_MEOP  = (F_perPin_meop / (S.pinDia * S.t)) / 1000;
 
 cases = struct([]);
 
@@ -266,6 +295,22 @@ cases(5).load  = Load_PV_MEOP;
 cases(5).allow = S.allow.yield.pressureVessel;
 cases(5).fos   = S.DF_casing;
 
+% ---- Retention ring (hardware) ----
+cases(6).name  = 'Ret Ring Shear Out';
+cases(6).load  = Load_ShearOut_ret_MEOP;
+cases(6).allow = S.allow.yield.ret_shearOut;
+cases(6).fos   = S.DF_pin;
+
+cases(7).name  = 'Ret Ring Net Tension';
+cases(7).load  = Load_NetTens_ret_MEOP;
+cases(7).allow = S.allow.yield.ret_netTension;
+cases(7).fos   = S.DF_pin;
+
+cases(8).name  = 'Ret Ring Bearing';
+cases(8).load  = Load_Bearing_ret_MEOP;
+cases(8).allow = S.allow.yield.ret_bearing;
+cases(8).fos   = S.DF_pin;
+
 S = ret.updateMarginStatus(S, cases);
 
 S = ret.updateConstraintStatus(S, Stress_ShearOut, Net_Tension, Pin_Shear, Bearing, Pressure_Vessel);
@@ -279,6 +324,40 @@ F_perPin_meop = F_axial_meop / max(1, totalPins_oneEnd);
 Load_ShearOut = (F_axial_meop / A_ShearOut) / 1000;
 Load_NetTens  = (F_axial_meop / A_tension)  / 1000;
 Load_Bearing  = (F_perPin_meop / (S.pinDia * S.t)) / 1000;
+
+% -----------------------
+% Retention ring loads (at MEOP)
+% IMPORTANT: Ret ring margins must NOT depend on casing wall thickness (S.t).
+% Use S.retRingThk for ret ring load areas.
+% -----------------------
+retRingThk = S.retRingThk;
+if ~isfinite(retRingThk) || retRingThk <= 0
+    retRingThk = 0.25;
+end
+
+% Shear-out (same geometric model as casing, but with ring thickness)
+A_ShearOut_ret = sum((S.rowSpacing*(n-1) + S.firstRowZ) * retRingThk * 2 * S.nPinsPerRow);
+if ~isfinite(A_ShearOut_ret) || A_ShearOut_ret <= 0
+    A_ShearOut_ret = 1e-6;
+end
+
+% Net tension (ring annulus area minus hole projections)
+A_ring_gross = (pi/4) * (S.ID^2 - (S.ID - 2*retRingThk)^2);
+A_holes_per_row_ret = S.pinDia * S.nPinsPerRow * retRingThk;
+if S.rowSpacing <= S.kInteract * S.pinDia
+    N_eff_ret = S.nRows;
+else
+    N_eff_ret = 1;
+end
+A_tension_ret = A_ring_gross - N_eff_ret * A_holes_per_row_ret;
+if ~isfinite(A_tension_ret) || A_tension_ret <= 0
+    A_tension_ret = 1e-6;
+end
+
+% Bearing (pin load over projected area in the ring thickness)
+Load_ShearOut_ret = (F_axial_meop / A_ShearOut_ret) / 1000;
+Load_NetTens_ret  = (F_axial_meop / A_tension_ret)  / 1000;
+Load_Bearing_ret  = (F_perPin_meop / (S.pinDia * retRingThk)) / 1000;
 
 A_pin = (pi/4)*S.pinDia^2;
 Load_PinShear = (F_perPin_meop / max(1e-6, A_pin)) / 1000;
@@ -320,18 +399,18 @@ rows(5).marginU   = marg(S.allow.ult.pinShear,   Load_PinShear, S.FOS.comp_u);
 % ---- RET RING ---- (defaults to N/A if allowables are NaN)
 rows(6).component = "Ret Ring";
 rows(6).caseName  = "Shear-Out";
-rows(6).marginY   = marg(S.allow.yield.ret_shearOut, Load_ShearOut, S.FOS.comp_y);
-rows(6).marginU   = marg(S.allow.ult.ret_shearOut,   Load_ShearOut, S.FOS.comp_u);
+rows(6).marginY   = marg(S.allow.yield.ret_shearOut, Load_ShearOut_ret, S.FOS.comp_y);
+rows(6).marginU   = marg(S.allow.ult.ret_shearOut,   Load_ShearOut_ret, S.FOS.comp_u);
 
 rows(7).component = "Ret Ring";
 rows(7).caseName  = "Net Tension";
-rows(7).marginY   = marg(S.allow.yield.ret_netTension, Load_NetTens, S.FOS.comp_y);
-rows(7).marginU   = marg(S.allow.ult.ret_netTension,   Load_NetTens, S.FOS.comp_u);
+rows(7).marginY   = marg(S.allow.yield.ret_netTension, Load_NetTens_ret, S.FOS.comp_y);
+rows(7).marginU   = marg(S.allow.ult.ret_netTension,   Load_NetTens_ret, S.FOS.comp_u);
 
 rows(8).component = "Ret Ring";
 rows(8).caseName  = "Bearing";
-rows(8).marginY   = marg(S.allow.yield.ret_bearing, Load_Bearing, S.FOS.comp_y);
-rows(8).marginU   = marg(S.allow.ult.ret_bearing,   Load_Bearing, S.FOS.comp_u);
+rows(8).marginY   = marg(S.allow.yield.ret_bearing, Load_Bearing_ret, S.FOS.comp_y);
+rows(8).marginU   = marg(S.allow.ult.ret_bearing,   Load_Bearing_ret, S.FOS.comp_u);
 
 S = ret.updateMarginTable(S, rows);
 

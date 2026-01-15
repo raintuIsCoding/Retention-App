@@ -7,7 +7,7 @@ S.marginFrac = 0.01;
 
 % Main geometry defaults (updated)
 S.ID          = 8.0;      % inner diameter of casing (in)
-S.t           = 0.25;     % wall thickness (in)
+S.t           = 0.28;     % wall thickness (in)
 S.L_casing    = 10.0;     % length of modeled region (in)
 S.lengthMode  = "aftOnly"; % "aftOnly" (config view) or "full" (full casing)
 S.mirrorPins  = false;     % when true, mirror pins/ret rings to forward end for display

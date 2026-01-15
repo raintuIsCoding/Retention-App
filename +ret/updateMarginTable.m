@@ -24,7 +24,7 @@ for i = 1:n
     if ~isfinite(my)
         set(S.marginCells(i,3), 'String', 'N/A', 'BackgroundColor', white, 'ForegroundColor', [0 0 0]);
     else
-        set(S.marginCells(i,3), 'String', sprintf('%+.2f', my));
+        set(S.marginCells(i,3), 'String', sprintf('%+.3f', my));
         if my >= 0
             set(S.marginCells(i,3), 'BackgroundColor', green, 'ForegroundColor', [0 0.35 0]);
         else
@@ -37,7 +37,7 @@ for i = 1:n
     if ~isfinite(mu)
         set(S.marginCells(i,4), 'String', 'N/A', 'BackgroundColor', white, 'ForegroundColor', [0 0 0]);
     else
-        set(S.marginCells(i,4), 'String', sprintf('%+.2f', mu));
+        set(S.marginCells(i,4), 'String', sprintf('%+.3f', mu));
         if mu >= 0
             set(S.marginCells(i,4), 'BackgroundColor', green, 'ForegroundColor', [0 0.35 0]);
         else
