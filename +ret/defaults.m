@@ -21,7 +21,7 @@ S.pinDia      = 0.375;    % pin diameter (in)
 S.retRingThk  = 0.25;     % retention ring thickness (in)
 S.pinLen      = S.t + S.retRingThk;  % derived pin engagement length (in)
 
-S.casingBaseLength   = 90.0; % fixed minimum physical casing length
+S.casingBaseLength   = 18.0; % fixed minimum physical casing length
 S.retRingLengthMin   = 1.0;  % minimum retention length per end
 S.configViewLength   = 10.0; % rendered length in config view
 
@@ -48,10 +48,10 @@ S.allow = struct();
 S.allow.yield = struct();
 S.allow.ult   = struct();
 
-S.allow.yield.shearOut       = 41.18;
-S.allow.yield.netTension     = 13.9;
-S.allow.yield.bearing        = 31.4;
-S.allow.yield.pressureVessel = 41.11;
+S.allow.yield.shearOut       = 36.27;
+S.allow.yield.netTension     = 13.93;
+S.allow.yield.bearing        = 31.42;
+S.allow.yield.pressureVessel = 30.10;
 
 % Mirror casing allowables to ultimate by default (single-box UI behavior)
 S.allow.ult.shearOut         = S.allow.yield.shearOut;
