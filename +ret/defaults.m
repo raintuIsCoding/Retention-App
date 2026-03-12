@@ -15,13 +15,14 @@ S.mirrorPins  = false;     % when true, mirror pins/ret rings to forward end for
 S.nRows       = 3;        % axial rows of pins
 S.nPinsPerRow = 10;       % pins around circumference per row
 S.rowSpacing  = 0.75;     % axial spacing between rows (in)
-S.firstRowZ   = 1.0;      % axial position of first row from x=0 (in)
+S.firstRowZ   = 0.75;      % axial position of first row from x=0 (in)
+S.lastRowZ    = 0.5; % axial position of last row + extra end offset (in) (default symmetric)
 S.pinDia      = 0.375;    % pin diameter (in)
 
 S.retRingThk  = 0.25;     % retention ring thickness (in)
 S.pinLen      = S.t + S.retRingThk;  % derived pin engagement length (in)
 
-S.casingBaseLength   = 18.0; % fixed minimum physical casing length
+S.casingBaseLength   = 90.0; % fixed minimum physical casing length
 S.retRingLengthMin   = 1.0;  % minimum retention length per end
 S.configViewLength   = 10.0; % rendered length in config view
 
@@ -49,9 +50,9 @@ S.allow.yield = struct();
 S.allow.ult   = struct();
 
 S.allow.yield.shearOut       = 36.27;
-S.allow.yield.netTension     = 13.93;
-S.allow.yield.bearing        = 31.42;
-S.allow.yield.pressureVessel = 30.10;
+S.allow.yield.netTension     = 18.526;
+S.allow.yield.bearing        = 36.724;
+S.allow.yield.pressureVessel = 34.119;
 
 % Mirror casing allowables to ultimate by default (single-box UI behavior)
 S.allow.ult.shearOut         = S.allow.yield.shearOut;

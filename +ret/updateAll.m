@@ -23,8 +23,12 @@ totalPins_total  = totalPins_oneEnd * 2;      % full hardware mass assumes BOTH 
 % =========================
 % Retention ring length logic (per end)
 % =========================
-% Driven by: edge offset (firstRowZ), row spacing, number of rows
-retLen_rows = 2*S.firstRowZ + (S.nRows - 1)*S.rowSpacing;
+% Driven by: first/last row offsets, row spacing, number of rows
+% Back-compat: if lastRowZ not present, mirror firstRowZ
+if ~isfield(S,'lastRowZ') || ~isfinite(S.lastRowZ)
+    S.lastRowZ = S.firstRowZ;
+end
+retLen_rows = S.firstRowZ + (S.nRows - 1)*S.rowSpacing + S.lastRowZ;
 
 % Optional minimum (keeps it from going absurdly small)
 if ~isfield(S,'retRingLengthMin') || ~isfinite(S.retRingLengthMin) || S.retRingLengthMin < 0
@@ -56,7 +60,7 @@ packingOK = (S.nPinsPerRow <= maxPinsCirc);
 % Axial geometry check (must use PHYSICAL length)
 % =========================
 lastRowX = S.firstRowZ + (S.nRows - 1)*S.rowSpacing;
-axialOK = (lastRowX + S.firstRowZ <= S.L_phys);
+axialOK = (lastRowX + S.lastRowZ <= S.L_phys);
 
 % =========================
 % Apply render mode (full vs config) + force visual refresh
@@ -114,7 +118,7 @@ Mass_retention_rings = Volume_ring_net_oneEnd * S.density_Al * nEnds_mass;
 % -----------------------
 % 3) Pin mass (steel)
 % -----------------------
-pinLen = S.t + retRingThk;
+pinLen = 0.75;
 Volume_pins_total = totalPins_total * pi * (S.pinDia/2)^2 * pinLen;
 Mass_pins = Volume_pins_total * S.density_pin;
 
@@ -153,8 +157,9 @@ n = 1:S.nRows;
 % -------- Areas --------
 A_bore = pi * (S.ID/2)^2;  % in^2
 
-% Shear-out area (your existing style; kept)
-A_ShearOut = sum((S.rowSpacing*(n-1) + S.firstRowZ) * S.t * 2 * S.nPinsPerRow);
+% Shear-out area
+% A_ShearOut = sum((S.rowSpacing*(n-1) + S.firstRowZ) * S.t * 2 * S.nPinsPerRow);
+A_ShearOut = S.firstRowZ * S.t * 2 * S.nPinsPerRow * 3;
 
 % Net tension area
 A_wall_gross    = (pi/4) * ((S.ID + 2*S.t)^2 - S.ID^2);

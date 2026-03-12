@@ -63,6 +63,9 @@ end
 if isfield(S,'edFirst') && isgraphics(S.edFirst)
     S.firstRowZ = str2double(get(S.edFirst,'String'));
 end
+if isfield(S,'edLast') && isgraphics(S.edLast)
+    S.lastRowZ = str2double(get(S.edLast,'String'));
+end
 
 % -------- Pin diameter (dropdown preferred) --------
 if isfield(S,'ddPinDia') && isgraphics(S.ddPinDia) && isfield(S,'allowedPinDias')
@@ -114,12 +117,14 @@ if ~isfinite(S.t)  || S.t<=0,  S.t = 0.25; end
 if ~isfinite(S.MEOP_psi) || S.MEOP_psi<=0, S.MEOP_psi = 850; end
 if ~isfinite(S.rowSpacing) || S.rowSpacing<=0, S.rowSpacing = 0.75; end
 if ~isfinite(S.firstRowZ)  || S.firstRowZ<0,   S.firstRowZ  = 1.0; end
+if ~isfield(S,'lastRowZ') || ~isfinite(S.lastRowZ) || S.lastRowZ<0, S.lastRowZ = S.firstRowZ; end
 if ~isfinite(S.pinDia)     || S.pinDia<=0,     S.pinDia     = 0.375; end
 
 % Push formatting back (only if controls exist)
 if isfield(S,'edRows') && isgraphics(S.edRows), set(S.edRows,'String', num2str(S.nRows)); end
 if isfield(S,'edPPR')  && isgraphics(S.edPPR),  set(S.edPPR,'String',  num2str(S.nPinsPerRow)); end
 if isfield(S,'edMEOP') && isgraphics(S.edMEOP), set(S.edMEOP,'String', num2str(S.MEOP_psi)); end
+if isfield(S,'edLast') && isgraphics(S.edLast), set(S.edLast,'String', num2str(S.lastRowZ)); end
 
 % Keep allowables + bounds synced (robust versions)
 S = ret.readConstraintsFromUI(S);
