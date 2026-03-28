@@ -1,4 +1,4 @@
-function S = updateConstraintStatus(S, shearOut, netTension, pinShear, bearing, pressureVessel)
+function S = updateConstraintStatus(S, pressureVessel, netTension, shearOut, bearing, pinShear)
 
 % Expect 8 lines: 7 constraints + 1 banner
 if ~isfield(S,'txtOptLines') || numel(S.txtOptLines) < 8 || ~all(isgraphics(S.txtOptLines))
@@ -11,7 +11,7 @@ targets = S.targets;
 marginFrac = S.marginFrac;   % 0.5 = allow 5% violation to still show PASS
 
 % Formatting helpers
-fmtLine = @(name, val, lim, pass, sense) sprintf('%-10s: %6.2f %2s %6.2f  %s', ...
+fmtLine = @(name, val, lim, pass, sense) sprintf('%-16s: %6.2f %2s %6.2f  %s', ...
     name, val, sense, lim, tern(pass,'PASS','FAIL'));
 
 colPass = [0.85 1.00 0.85];
@@ -19,23 +19,23 @@ colFail = [1.00 0.85 0.85];
 
 passAll = true;
 
-% 1 Shear Out (<=)
-lim = targets.shearOut_max;
+% 1 Pressure Vessel (<=)
+lim = targets.pressure_vessel_max;
 softLim = lim * (1 + marginFrac);
-pass = (shearOut <= softLim); passAll = passAll && pass;
-setLine(1, fmtLine('Shear Out', shearOut, lim, pass, '<='), pass);
+pass = (pressureVessel <= softLim); passAll = passAll && pass;
+setLine(1, fmtLine('Pressure Vessel', pressureVessel, lim, pass, '<='), pass);
 
 % 2 Net Tension (<=)
 lim = targets.netTension_max;
 softLim = lim * (1 + marginFrac);
 pass = (netTension <= softLim); passAll = passAll && pass;
-setLine(2, fmtLine('Net Tens', netTension, lim, pass, '<='), pass);
+setLine(2, fmtLine('Net Tension', netTension, lim, pass, '<='), pass);
 
-% 3 Pin Shear (<=)
-lim = targets.pinShear_max;
+% 3 Shear Out (<=)
+lim = targets.shearOut_max;
 softLim = lim * (1 + marginFrac);
-pass = (pinShear <= softLim); passAll = passAll && pass;
-setLine(3, fmtLine('Pin Shear', pinShear, lim, pass, '<='), pass);
+pass = (shearOut <= softLim); passAll = passAll && pass;
+setLine(3, fmtLine('Shear Out', shearOut, lim, pass, '<='), pass);
 
 % 4 Bearing (<=)
 lim = targets.bearing_max;
@@ -43,11 +43,11 @@ softLim = lim * (1 + marginFrac);
 pass = (bearing <= softLim); passAll = passAll && pass;
 setLine(4, fmtLine('Bearing', bearing, lim, pass, '<='), pass);
 
-% 5 Pressure Vessel (<=)
-lim = targets.pressure_vessel_max;
+% 5 Pin Shear (<=)
+lim = targets.pinShear_max;
 softLim = lim * (1 + marginFrac);
-pass = (pressureVessel <= softLim); passAll = passAll && pass;
-setLine(5, fmtLine('Pressure Vessel', pressureVessel, lim, pass, '<='), pass);
+pass = (pinShear <= softLim); passAll = passAll && pass;
+setLine(5, fmtLine('Pin Shear', pinShear, lim, pass, '<='), pass);
 
 % 7 Banner + panel background
 if passAll

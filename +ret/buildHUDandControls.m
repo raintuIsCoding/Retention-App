@@ -186,20 +186,20 @@ mkEditWideA = @(val, yy, tag) uicontrol(S.pOptAllow,'Style','edit','Units','norm
 
 % Rows
 yy = yA0;
-mkLabelA('Casing Shear-Out', yy);
-S.edAllowC_shearOut = mkEditWideA(S.allow.yield.shearOut, yy, 'allow_c_shearOut');
+mkLabelA('Casing Pressure Vessel', yy);
+S.edAllowC_pv = mkEditWideA(S.allow.yield.pressureVessel, yy, 'allow_c_pressureVessel');
 
 yy = yy - dyA;
 mkLabelA('Casing Net Tension', yy);
 S.edAllowC_netT = mkEditWideA(S.allow.yield.netTension, yy, 'allow_c_netTension');
 
 yy = yy - dyA;
-mkLabelA('Casing Bearing', yy);
-S.edAllowC_bear = mkEditWideA(S.allow.yield.bearing, yy, 'allow_c_bearing');
+mkLabelA('Casing Shear Out', yy);
+S.edAllowC_shearOut = mkEditWideA(S.allow.yield.shearOut, yy, 'allow_c_shearOut');
 
 yy = yy - dyA;
-mkLabelA('Casing Pressure Vessel', yy);
-S.edAllowC_pv = mkEditWideA(S.allow.yield.pressureVessel, yy, 'allow_c_pressureVessel');
+mkLabelA('Casing Bearing', yy);
+S.edAllowC_bear = mkEditWideA(S.allow.yield.bearing, yy, 'allow_c_bearing');
 
 yy = yy - dyA;
 mkLabelA('Pins Pin Shear', yy);
@@ -207,14 +207,14 @@ S.edAllowY_ps = mkEditA(S.allow.yield.pinShear, yy, xY, 'allow_y_pinShear');
 S.edAllowU_ps = mkEditA(S.allow.ult.pinShear,   yy, xU, 'allow_u_pinShear');
 
 yy = yy - dyA;
-mkLabelA('Ret Ring Shear-Out', yy);
-S.edAllowY_retSO = mkEditA(S.allow.yield.ret_shearOut, yy, xY, 'allow_y_ret_shearOut');
-S.edAllowU_retSO = mkEditA(S.allow.ult.ret_shearOut,   yy, xU, 'allow_u_ret_shearOut');
-
-yy = yy - dyA;
 mkLabelA('Ret Ring Net Tension', yy);
 S.edAllowY_retNT = mkEditA(S.allow.yield.ret_netTension, yy, xY, 'allow_y_ret_netTension');
 S.edAllowU_retNT = mkEditA(S.allow.ult.ret_netTension,   yy, xU, 'allow_u_ret_netTension');
+
+yy = yy - dyA;
+mkLabelA('Ret Ring Shear Out', yy);
+S.edAllowY_retSO = mkEditA(S.allow.yield.ret_shearOut, yy, xY, 'allow_y_ret_shearOut');
+S.edAllowU_retSO = mkEditA(S.allow.ult.ret_shearOut,   yy, xU, 'allow_u_ret_shearOut');
 
 yy = yy - dyA;
 mkLabelA('Ret Ring Bearing', yy);

@@ -49,31 +49,33 @@ S.allow = struct();
 S.allow.yield = struct();
 S.allow.ult   = struct();
 
-S.allow.yield.shearOut       = 36.27;
-S.allow.yield.netTension     = 18.526;
-S.allow.yield.bearing        = 36.724;
 S.allow.yield.pressureVessel = 34.119;
+S.allow.yield.netTension     = 18.527;
+S.allow.yield.shearOut       = 9.181;
+S.allow.yield.bearing        = 36.724;
+
 
 % Mirror casing allowables to ultimate by default (single-box UI behavior)
-S.allow.ult.shearOut         = S.allow.yield.shearOut;
-S.allow.ult.netTension       = S.allow.yield.netTension;
-S.allow.ult.bearing          = S.allow.yield.bearing;
 S.allow.ult.pressureVessel   = S.allow.yield.pressureVessel;
+S.allow.ult.netTension       = S.allow.yield.netTension;
+S.allow.ult.shearOut         = S.allow.yield.shearOut;
+S.allow.ult.bearing          = S.allow.yield.bearing;
+
 
 % Pins
 S.allow.yield.pinShear       = 58.0;
 S.allow.ult.pinShear         = 104.0;
 
 % Ret ring
-S.allow.yield.ret_shearOut   = 20.0;
-S.allow.ult.ret_shearOut     = 27.0;
 S.allow.yield.ret_netTension = 35.0;
 S.allow.ult.ret_netTension   = 42.0;
+S.allow.yield.ret_shearOut   = 20.0;
+S.allow.ult.ret_shearOut     = 27.0;
 S.allow.yield.ret_bearing    = 58.0;
 S.allow.ult.ret_bearing      = 88.0;
 
 %% ---------- CASING PARAMETERS ----------
-S.casingLength = 90;              % Total casing length (in) - for weight calc
+S.casingLength = 90.5;              % Total casing length (in) - for weight calc
 S.density_CF = 0.0535;            % Carbon fiber density (lb/in^3)
 S.density_Al = 0.0975;            % 6061 Aluminum density (lb/in^3)
 S.density_pin = 0.289;            % lb/in^3 for 316 SS (typical)
